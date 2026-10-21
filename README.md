@@ -40,6 +40,10 @@ uvicorn backend.app.main:app --reload
 - The reminder job runs every 15 minutes while the server is running.
 - To try a multi-turn conversation with the live model: `python scripts/live_conversation.py "first message" "second message"`
 
+## Staff page
+- Set `ADMIN_PASSWORD` in `.env` (a long password), restart the server, open http://127.0.0.1:8000/staff
+- See enquiries, tickets, callback requests and the outbox; change statuses; export CSV; run reminders by hand.
+
 ## Test
 - Automated tests (use a FakeLLM, no API calls, free): `python -m pytest`
   The browser tests need Chromium once: `python -m playwright install chromium`. Screenshots go to docs/screenshots/.

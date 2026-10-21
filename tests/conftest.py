@@ -5,19 +5,21 @@ import os
 # Set before the app is imported, so .env values (like the real provider) are not used.
 os.environ["LLM_PROVIDER"] = "fake"
 os.environ["DEMO_MODE"] = "true"
+os.environ["ADMIN_PASSWORD"] = "test-password"
 
 import pytest
 from fastapi.testclient import TestClient
 
-from backend.app import db, main, sessions
+from backend.app import db, main, sessions, staff
 from backend.app.llm.base import LLMResult, ToolCall
 from backend.app.llm.fake_provider import FakeLLM
 
 
 @pytest.fixture(autouse=True)
 def fresh_db(tmp_path):
-    """Every test gets its own empty database."""
+    """Every test gets its own empty database and no staff logins."""
     db.init_db(tmp_path / "test.db")
+    staff.reset_state()
 
 
 @pytest.fixture

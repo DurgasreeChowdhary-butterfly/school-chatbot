@@ -21,3 +21,4 @@
 | 21 Oct 2026 | Ticket status needs reference + registered mobile; wrong number and unknown ticket get the same reply; 5 failed lookups per session locks lookups | Claude (agent) | Never reveal a ticket to a wrong number |
 | 21 Oct 2026 | Urgent (safety) tickets notify first contact, backup and front office immediately | Claude (agent) | CLAUDE.md: safety goes straight to a human |
 | 21 Oct 2026 | Tickets are created without a separate confirmation step (unlike enquiries) | Claude (agent) | The parent explicitly asks to log it; keeps urgent cases fast |
+| 21 Oct 2026 | Staff page: one shared ADMIN_PASSWORD, in-memory login tokens (8 h), 5 failed logins per IP per 15 min | Claude (agent) | Simple for the pilot; per-person accounts later if needed |

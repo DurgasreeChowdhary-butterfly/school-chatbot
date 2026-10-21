@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Staff view</title>
+<style>
+  /* Look follows the Staff view tab in docs/school-chatbot-demo.html */
+  :root { color-scheme: light; --bg: #F2F4F8; --surface: #FFFFFF; --ink: #172033; --muted: #566178; --line: #D8DDE8;
+    --accent: #1D3A6B; --accent-soft: #E4EBF7; --on-accent: #FFFFFF; --gold: #E3A21A; --gold-soft: #FFF3D6;
+    --good: #1E7B4F; --good-soft: #DFF3E8; --warn: #9A5200; --warn-soft: #FFEBD0; --bad: #B3261E; --bad-soft: #FBE3E1; }
+  @media (prefers-color-scheme: dark) { :root { color-scheme: dark; --bg: #0E1420; --surface: #172033; --ink: #E7ECF5; --muted: #9BA8BF; --line: #2A3650;
+    --accent: #8DB1EE; --accent-soft: #1E2C48; --on-accent: #0E1420; --gold: #F0B73A; --gold-soft: #3A2F12;
+    --good: #5FD39A; --good-soft: #163A2B; --warn: #F2B365; --warn-soft: #3B2A10; --bad: #FF8A80; --bad-soft: #3F1B19; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: 0 16px; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding-block: 16px 40px; }
+  header { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  h1 { margin: 0; font-size: 22px; } h2 { margin: 0 0 2px; font-size: 18px; }
+  .demo { background: var(--gold-soft); border: 1px solid var(--gold); border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 700; }
+  .banner { background: var(--gold-soft); border: 1px solid var(--gold); border-radius: 10px; padding: 10px 14px; font-size: 13px; margin-bottom: 16px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  button, .btn { font: inherit; font-size: 13px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; cursor: pointer; text-decoration: none; }
+  button.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 16px; }
+  .panel-head { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  .panel-head p { margin: 0; color: var(--muted); font-size: 13px; flex-basis: 100%; }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; min-width: 760px; }
+  th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 600; border-bottom: 2px solid var(--line); padding: 6px 8px; white-space: nowrap; }
+  td { border-bottom: 1px solid var(--line); padding: 8px; vertical-align: top; }
+  td.wrap-text { max-width: 320px; overflow-wrap: anywhere; }
+  select { font: inherit; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 4px 6px; }
+  .pill { display: inline-block; border-radius: 999px; padding: 2px 9px; font-size: 12px; font-weight: 600; }
+  .pill.urgent { background: var(--bad-soft); color: var(--bad); }
+  .pill.ok { background: var(--good-soft); color: var(--good); }
+  .pill.warn { background: var(--warn-soft); color: var(--warn); }
+  .muted { color: var(--muted); font-size: 12px; }
+  .empty { color: var(--muted); padding: 6px 0; }
+  details summary { cursor: pointer; }
+  pre { white-space: pre-wrap; margin: 6px 0 0; font: inherit; font-size: 12px; color: var(--muted); }
+  .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="actions"><h1>Staff view</h1><span class="demo" id="demo" hidden>DEMO · dummy data</span></div>
+    <div class="actions">
+      <button type="button" id="refresh">Refresh</button>
+      <button type="button" id="remind">Run reminders now</button>
+      <form method="post" action="/staff/logout"><button type="submit">Log out</button></form>
+    </div>
+  </header>
+  <div class="banner" id="demoBanner" hidden><b>Demo data.</b> Everything here was created by test chats with a fictional school. Do not contact these numbers.</div>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Admission enquiries</h2><a class="btn" href="/staff/export/enquiries.csv">Export CSV</a>
+      <p>Routed to the campus counsellor. Reminder after 1 working day in "New", escalation to the front office after 2.</p></div>
+    <div class="scroll" id="enquiries"></div>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><h2>Parent concerns (tickets)</h2><a class="btn" href="/staff/export/tickets.csv">Export CSV</a>
+      <p>Routed by category. Acknowledge within 1 working day (move to "In progress"); escalates to the backup after 3 working days.</p></div>
+    <div class="scroll" id="tickets"></div>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><h2>Callback requests</h2><a class="btn" href="/staff/export/callbacks.csv">Export CSV</a>
+      <p>Created when someone asks to talk to a person.</p></div>
+    <div class="scroll" id="callbacks"></div>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><h2>Outbox</h2><a class="btn" href="/staff/export/outbox.csv">Export CSV</a>
+      <p>Every notification. "logged" means recorded only (no email settings); "sent" means emailed.</p></div>
+    <div class="scroll" id="outbox"></div>
+  </section>
+</div>
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const when = s => s ? esc(s.replace("T", " ").slice(0, 16)) : "";
+let STATUSES = {};
+
+function toast(text) {
+  const t = document.createElement("div"); t.className = "toast"; t.textContent = text; document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2200);
+}
+async function api(path, body) {
+  const r = await fetch(path, body ? { method: "POST", headers: { "Content-Type": "application/json", "X-Requested-With": "staff-page" }, body: JSON.stringify(body) } : {});
+  if (r.status === 401) { location.reload(); throw new Error("logged out"); }
+  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || r.statusText);
+  return r.json();
+}
+function statusSelect(kind, row) {
+  const options = STATUSES[kind].map(s => `<option${s === row.status ? " selected" : ""}>${esc(s)}</option>`).join("");
+  return `<select data-kind="${kind}" data-ref="${esc(row.ref)}" aria-label="Status of ${esc(row.ref)}">${options}</select>`;
+}
+function table(id, rows, headers, cells) {
+  $(id).innerHTML = rows.length
+    ? `<table><thead><tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.map(r => `<tr>${cells(r).map(c => `<td${c.cls ? ` class="${c.cls}"` : ""}>${c.html ?? c}</td>`).join("")}</tr>`).join("")}</tbody></table>`
+    : '<p class="empty">Nothing yet.</p>';
+}
+async function load() {
+  const d = await api("/staff/api/data");
+  STATUSES = d.statuses;
+  $("#demo").hidden = !d.demo; $("#demoBanner").hidden = !d.demo;
+  table("#enquiries", d.enquiries, ["Ref", "Parent", "Child and class", "Mobile", "Visit", "Routed to", "Status", "Logged", "Notes"], e => [
+    `<b>${esc(e.ref)}</b>`, esc(e.parent_name), `${esc(e.child_name)} · ${esc(e.class_applying)}`, esc(e.mobile),
+    esc(e.visit_preference), esc(e.assigned_to), statusSelect("enquiries", e), when(e.created_at),
+    { cls: "wrap-text", html: [e.previous_school && `Previous: ${esc(e.previous_school)}`, e.reason && `Reason: ${esc(e.reason)}`, e.notes && `<pre>${esc(e.notes)}</pre>`, e.escalated_at ? '<span class="pill urgent">Escalated</span>' : e.reminded_at ? '<span class="pill warn">Reminded</span>' : ""].filter(Boolean).join("<br>") }
+  ]);
+  table("#tickets", d.tickets, ["Ref", "Category", "Concern", "Parent", "First contact", "Backup", "Status", "Logged"], t => [
+    `<b>${esc(t.ref)}</b>${t.urgent ? ' <span class="pill urgent">Urgent</span>' : ""}${t.escalated_at ? ' <span class="pill warn">Escalated</span>' : ""}`,
+    esc(t.category), { cls: "wrap-text", html: esc(t.description) }, `${esc(t.parent_name)}<br><span class="muted">${esc(t.mobile)}</span>`,
+    esc(t.first_contact), esc(t.backup_contact), statusSelect("tickets", t), when(t.created_at)
+  ]);
+  table("#callbacks", d.callbacks, ["Ref", "Name", "Mobile", "About", "To", "Status", "Logged"], c => [
+    `<b>${esc(c.ref)}</b>`, esc(c.name), esc(c.mobile), { cls: "wrap-text", html: esc(c.reason) }, esc(c.assigned_to), statusSelect("callbacks", c), when(c.created_at)
+  ]);
+  table("#outbox", d.outbox, ["When", "Kind", "To", "Subject", "Status"], m => [
+    when(m.created_at), esc(m.kind), `${esc(m.to_role)}<br><span class="muted">${esc(m.to_email)}</span>`,
+    { cls: "wrap-text", html: `<details><summary>${esc(m.subject)}</summary><pre>${esc(m.body)}</pre></details>` },
+    `<span class="pill ${m.status === "sent" ? "ok" : m.status === "failed" ? "urgent" : "warn"}">${esc(m.status)}</span>`
+  ]);
+}
+document.addEventListener("change", async e => {
+  const s = e.target.closest("select[data-kind]"); if (!s) return;
+  try { await api("/staff/api/status", { kind: s.dataset.kind, ref: s.dataset.ref, status: s.value }); toast(`${s.dataset.ref}: ${s.value}`); }
+  catch (err) { toast("Could not save: " + err.message); load(); }
+});
+$("#refresh").onclick = () => load().then(() => toast("Refreshed"));
+$("#remind").onclick = async () => { const r = await api("/staff/api/run-reminders", {}); toast(`${r.notifications} reminder(s) created`); load(); };
+load();
+</script>
+</body>
+</html>

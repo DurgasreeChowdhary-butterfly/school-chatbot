@@ -117,3 +117,31 @@
 - Ticket status changes do not notify the parent (no SMS/WhatsApp in scope).
 - The lockout is per chat session; someone could start new sessions to keep guessing (Stage F adds rate limits).
 - The bot decides the category; a wrong choice routes to the wrong person (staff can see it on the staff page).
+
+## Stage E: Staff page (21 Oct 2026)
+
+**Built**
+- `/staff` (`staff.py`, pages in `backend/app/staff_pages/`): login with `ADMIN_PASSWORD` from .env.
+  Login is switched off (with a clear message) if the password is empty.
+- Login protection: 5 wrong attempts per IP in 15 minutes blocks further tries; constant-time password check;
+  login cookie is random, HttpOnly, SameSite=Strict, limited to /staff, expires after 8 hours.
+- Shows enquiries, tickets (urgent and escalated marked), callback requests and the outbox (click a subject to read it).
+- Staff change statuses from a drop-down (enquiries: New, Contacted, Visit booked, Closed; tickets: Received, In progress,
+  Resolved; callbacks: New, Called back). Changes need a header only the staff page sends (blocks cross-site forms).
+- CSV export for each table; cells that start like a spreadsheet formula are made safe.
+- "Run reminders now" button. Demo label and banner while DEMO_MODE=true. Light and dark theme.
+
+**Tested**
+- pytest: page needs login, wrong password, login and data, rate limit (right password refused after 5 failures),
+  login off without password, logout, status changes (valid, invalid, missing), header required, CSV export and formula safety,
+  reminders button. 54 tests pass.
+- Browser: wrong then right password, sample rows shown, status changed in the drop-down and saved, no horizontal scroll
+  at desktop and 400px. Screenshot `docs/screenshots/5-staff-view.png`.
+
+**What failed and how it was fixed**
+- `python-multipart` was missing for the login form; added to requirements.txt.
+
+**Still weak**
+- One shared staff password; no per-person accounts or audit of who changed what.
+- Logins are kept in memory: everyone is logged out when the server restarts.
+- The login rate limit is per IP; staff behind one office network share the limit.

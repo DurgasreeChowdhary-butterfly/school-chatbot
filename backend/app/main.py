@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import config, db, jobs, sessions
+from . import config, db, jobs, sessions, staff
 from .chat_service import FALLBACK_REPLY, handle_message
 from .knowledge import KB_DIR, load_all_campuses
 from .llm.base import LLMProvider
@@ -50,6 +50,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="School Chatbot", lifespan=lifespan)
+app.include_router(staff.router)
 
 # The chat window files (chat.js, chat.css) and a test page that embeds them.
 WIDGET_DIR = KB_DIR.parent / "widget"

@@ -22,11 +22,15 @@ def free_port() -> int:
         return s.getsockname()[1]
 
 
+BROWSER_DB = {}
+
+
 @pytest.fixture(scope="module")
 def server(tmp_path_factory):
     port = free_port()
-    env = {**os.environ, "LLM_PROVIDER": "fake", "DEMO_MODE": "true",
-           "DB_PATH": str(tmp_path_factory.mktemp("db") / "browser.db")}
+    BROWSER_DB["path"] = tmp_path_factory.mktemp("db") / "browser.db"
+    env = {**os.environ, "LLM_PROVIDER": "fake", "DEMO_MODE": "true", "ADMIN_PASSWORD": "browser-test",
+           "DB_PATH": str(BROWSER_DB["path"])}
     proc = subprocess.Popen(
         [sys.executable, "-m", "uvicorn", "backend.app.main:app", "--port", str(port)],
         cwd=ROOT, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
@@ -116,6 +120,48 @@ def test_dark_theme(server, browser):
     assert bg == "rgb(23, 32, 51)"  # --sc-surface in the dark theme
     page.screenshot(path=SHOTS / "4-dark-theme.png")
     context.close()
+
+
+def test_staff_page_login_and_status_change(server, browser):
+    from backend.app import db
+    from backend.app.notify import notify
+    from backend.app.routing import role
+
+    # Put sample (dummy) rows in the browser server's database.
+    db.init_db(BROWSER_DB["path"])
+    db.insert("enquiries", {"campus": "pilot-campus", "parent_name": "Sample Parent", "child_name": "Sample Child",
+                            "class_applying": "Grade 3", "mobile": "9000000002", "visit_preference": "Saturday morning",
+                            "assigned_to": "Admission counsellor"})
+    t = db.insert("tickets", {"campus": "pilot-campus", "category": "Safety, health, bullying",
+                              "description": "Sample: child is being bullied", "parent_name": "Sample Parent",
+                              "mobile": "9000000001", "urgent": 1, "first_contact": "Principal",
+                              "backup_contact": "Vice principal"})
+    notify("pilot-campus", role("pilot-campus", "Principal"), f"URGENT New ticket {t['ref']}", "Sample body", t["ref"], "ticket")
+
+    page = browser.new_page(viewport={"width": 1280, "height": 900})
+    page.goto(server + "/staff")
+    page.fill("input[name=password]", "wrong")
+    page.click("button[type=submit]")
+    page.get_by_text("Wrong password").wait_for()
+    page.fill("input[name=password]", "browser-test")
+    page.click("button[type=submit]")
+    page.get_by_role("heading", name="Staff view").wait_for()
+    assert page.locator("#demo").is_visible()
+    page.get_by_text("Sample: child is being bullied").wait_for()
+
+    page.select_option(f"select[data-ref='{t['ref']}']", "In progress")
+    page.get_by_text(f"{t['ref']}: In progress").wait_for()  # confirmation toast
+    assert db.find_one("tickets", ref=t["ref"])["status"] == "In progress"
+    assert no_horizontal_scroll(page)
+    page.screenshot(path=SHOTS / "5-staff-view.png", full_page=True)
+
+    phone = browser.new_page(viewport={"width": 400, "height": 820})
+    phone.context.add_cookies(page.context.cookies())
+    phone.goto(server + "/staff")
+    phone.get_by_role("heading", name="Staff view").wait_for()
+    assert no_horizontal_scroll(phone)
+    phone.close()
+    page.close()
 
 
 def test_vendor_choice_asks_the_backend(server, browser):
