@@ -1,0 +1,504 @@
+<title>School Assistant Demo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: a header with two tabs. Chatbot tab = "try this" guide beside the chat window. Staff tab = what staff see. */
+:root{
+  --bg:#F2F4F8; --surface:#FFFFFF; --ink:#172033; --muted:#566178; --line:#D8DDE8;
+  --accent:#1D3A6B; --accent-soft:#E4EBF7; --gold:#E3A21A; --gold-soft:#FFF3D6;
+  --user-bg:#1D3A6B; --user-fg:#FFFFFF; --good:#1E7B4F; --good-soft:#DFF3E8; --warn:#9A5200; --warn-soft:#FFEBD0; --bad:#B3261E; --bad-soft:#FBE3E1;
+  --font-display:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;
+  --font-body:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1420; --surface:#172033; --ink:#E7ECF5; --muted:#9BA8BF; --line:#2A3650;
+    --accent:#8DB1EE; --accent-soft:#1E2C48; --gold:#F0B73A; --gold-soft:#3A2F12;
+    --user-bg:#2C5099; --user-fg:#FFFFFF; --good:#5FD39A; --good-soft:#163A2B; --warn:#F2B365; --warn-soft:#3B2A10; --bad:#FF8A80; --bad-soft:#3F1B19; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1420; --surface:#172033; --ink:#E7ECF5; --muted:#9BA8BF; --line:#2A3650;
+  --accent:#8DB1EE; --accent-soft:#1E2C48; --gold:#F0B73A; --gold-soft:#3A2F12;
+  --user-bg:#2C5099; --user-fg:#FFFFFF; --good:#5FD39A; --good-soft:#163A2B; --warn:#F2B365; --warn-soft:#3B2A10; --bad:#FF8A80; --bad-soft:#3F1B19; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.5;
+  padding-block:0; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px));}
+button{font:inherit;color:inherit}
+h1,h2,h3{font-family:var(--font-display);margin:0;line-height:1.2;text-wrap:balance}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.wrap{max-width:1120px;margin:0 auto;padding-block:16px 32px}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px;justify-content:space-between;padding-block:4px 16px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.mark{width:42px;height:42px;border-radius:10px;background:var(--accent);color:var(--surface);display:grid;place-items:center;font-family:var(--font-display);font-weight:700;letter-spacing:.02em;flex:none}
+:root[data-theme="dark"] .mark{color:#0E1420}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .mark{color:#0E1420}}
+.brand h1{font-size:19px}
+.brand p{margin:0;color:var(--muted);font-size:13px}
+.demo-pill{background:var(--gold-soft);color:var(--ink);border:1px solid var(--gold);border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+.tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px}
+.tab{border:0;background:none;padding:8px 14px;border-radius:9px;cursor:pointer;font-weight:600;color:var(--muted)}
+.tab[aria-selected="true"]{background:var(--accent);color:var(--surface)}
+:root[data-theme="dark"] .tab[aria-selected="true"]{color:#0E1420}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tab[aria-selected="true"]{color:#0E1420}}
+.count{display:inline-block;min-width:20px;padding:0 6px;margin-left:6px;border-radius:10px;background:var(--gold);color:#172033;font-size:12px;text-align:center}
+.banner{background:var(--gold-soft);border:1px solid var(--gold);border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}.chat{order:-1}}
+.guide{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
+.guide h2{font-size:17px;margin-bottom:4px}
+.guide p{margin:0 0 12px;color:var(--muted);font-size:13px}
+.try{display:flex;flex-direction:column;gap:8px}
+.try button{text-align:left;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 12px;cursor:pointer;font-size:14px}
+.try button:hover{border-color:var(--accent)}
+.try small{display:block;color:var(--muted);font-size:12px}
+.chat{background:var(--surface);border:1px solid var(--line);border-radius:16px;display:flex;flex-direction:column;height:min(720px, calc(100dvh - 150px));min-height:520px;overflow:hidden}
+.chat-head{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--accent);color:#fff}
+:root[data-theme="dark"] .chat-head{color:#0E1420}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .chat-head{color:#0E1420}}
+.avatar{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.2);display:grid;place-items:center;font-family:var(--font-display);font-weight:700;flex:none}
+.chat-head .t{min-width:0;flex:1}
+.chat-head strong{display:block;font-family:var(--font-display);font-size:16px}
+.chat-head span{font-size:12px;opacity:.9}
+.restart{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.4);color:inherit;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:13px}
+.msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;min-height:0}
+.m{max-width:86%;padding:10px 13px;border-radius:14px;overflow-wrap:anywhere}
+.m.bot{background:var(--bg);border:1px solid var(--line);border-top-left-radius:4px;align-self:flex-start}
+.m.you{background:var(--user-bg);color:var(--user-fg);border-top-right-radius:4px;align-self:flex-end}
+.m p{margin:0 0 6px}.m p:last-child{margin:0}
+.m ul{margin:4px 0;padding-left:18px}
+.m table{border-collapse:collapse;margin:6px 0;font-size:13px;width:100%}
+.m th,.m td{border:1px solid var(--line);padding:4px 8px;text-align:left}
+.m th{background:var(--accent-soft)}
+.m .src{display:block;margin-top:6px;font-size:11px;color:var(--muted)}
+.m.card{border-left:4px solid var(--good)}
+.m.card.urgent{border-left-color:var(--bad)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;margin:6px 0;font-size:13px}
+.kv dt{color:var(--muted)}.kv dd{margin:0;font-weight:600}
+.typing{display:flex;gap:4px;padding:12px 14px}
+.typing i{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:b 1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes b{0%,60%,100%{opacity:.3;transform:none}30%{opacity:1;transform:translateY(-3px)}}
+@media (prefers-reduced-motion: reduce){.typing i{animation:none;opacity:.6}}
+.chips{display:flex;flex-wrap:wrap;gap:8px;padding:0 16px 10px;max-height:150px;overflow-y:auto}
+.chip{background:var(--surface);border:1.5px solid var(--accent);color:var(--accent);border-radius:999px;padding:6px 13px;cursor:pointer;font-size:14px;font-weight:500}
+.chip:hover{background:var(--accent-soft)}
+.chip.alt{border-color:var(--line);color:var(--muted)}
+form.in{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--line);background:var(--surface)}
+form.in input{flex:1;min-width:0;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:10px 12px;font:inherit}
+form.in button{background:var(--accent);color:var(--surface);border:0;border-radius:10px;padding:0 16px;font-weight:600;cursor:pointer}
+:root[data-theme="dark"] form.in button{color:#0E1420}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) form.in button{color:#0E1420}}
+.foot{font-size:11px;color:var(--muted);text-align:center;padding:0 12px 8px}
+/* Staff view */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+.panel h2{font-size:18px;margin-bottom:2px}
+.panel>p{margin:0 0 12px;color:var(--muted);font-size:13px}
+.scroll{overflow-x:auto}
+table.t{border-collapse:collapse;width:100%;font-size:13px;min-width:720px}
+table.t th{text-align:left;font-size:12px;color:var(--muted);font-weight:600;border-bottom:2px solid var(--line);padding:6px 8px;white-space:nowrap}
+table.t td{border-bottom:1px solid var(--line);padding:8px;vertical-align:top}
+.pill{display:inline-block;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:600}
+.pill.new{background:var(--accent-soft);color:var(--accent)}
+.pill.ok{background:var(--good-soft);color:var(--good)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.bad{background:var(--bad-soft);color:var(--bad)}
+table.t select{font:inherit;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:4px 6px}
+.empty{color:var(--muted);font-size:14px;padding:8px 0}
+.sample{color:var(--muted);font-size:11px}
+.btn2{background:none;border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:13px;color:var(--muted)}
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;font-size:13px}
+.rules div{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.rules b{display:block;margin-bottom:2px}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">DS</div>
+      <div>
+        <h1>Demo International School</h1>
+        <p>School Assistant prototype · Campus A · English</p>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <span class="demo-pill">DEMO · dummy data</span>
+      <div class="tabs" role="tablist" aria-label="Views">
+        <button class="tab" role="tab" id="tab-chat" aria-selected="true" aria-controls="view-chat">Chatbot</button>
+        <button class="tab" role="tab" id="tab-staff" aria-selected="false" aria-controls="view-staff">Staff view<span class="count" id="staffCount" hidden>0</span></button>
+      </div>
+    </div>
+  </header>
+
+  <div id="view-chat" role="tabpanel" aria-labelledby="tab-chat">
+    <div class="banner"><b>Prototype.</b> Everything here is dummy data for a fictional school, running in your browser with no server. It shows how the real chatbot would look and behave. Anything you submit appears in the Staff view tab.</div>
+    <div class="grid">
+      <aside class="guide">
+        <h2>Try these</h2>
+        <p>Tap one to run it, or type your own question.</p>
+        <div class="try" id="try"></div>
+      </aside>
+      <section class="chat" aria-label="Chat with the school assistant">
+        <div class="chat-head">
+          <div class="avatar" aria-hidden="true">DS</div>
+          <div class="t"><strong>School Assistant</strong><span>Demo data · answers only from approved information</span></div>
+          <button class="restart" id="restart" type="button">Restart</button>
+        </div>
+        <div class="msgs" id="msgs" aria-live="polite"></div>
+        <div class="chips" id="chips"></div>
+        <form class="in" id="form" autocomplete="off">
+          <input id="text" type="text" placeholder="Type your question…" aria-label="Type your message" maxlength="300">
+          <button type="submit">Send</button>
+        </form>
+        <div class="foot">Dummy data. On the real website this window opens from a chat button.</div>
+      </section>
+    </div>
+  </div>
+
+  <div id="view-staff" role="tabpanel" aria-labelledby="tab-staff" hidden>
+    <div class="banner"><b>What staff would see.</b> Enquiries and concerns created in the chat arrive here, already routed to the right person. Change a status to see it reflected when a parent checks their ticket in the chat.</div>
+    <div class="panel">
+      <h2>Admission enquiries</h2>
+      <p>Routed to the campus counsellor. Follow-up reminder goes out if nobody has contacted the family.</p>
+      <div class="scroll" id="enqTable"></div>
+    </div>
+    <div class="panel">
+      <h2>Parent concerns (tickets)</h2>
+      <p>Routed by category. First contact acknowledges within 1 working day; unresolved after 3 working days escalates to the backup.</p>
+      <div class="scroll" id="tixTable"></div>
+    </div>
+    <div class="panel">
+      <h2>Callback requests</h2>
+      <p>Created when someone asks to talk to a person.</p>
+      <div class="scroll" id="callTable"></div>
+    </div>
+    <div class="panel">
+      <h2>Who handles what (dummy rules)</h2>
+      <div class="rules" id="rules"></div>
+    </div>
+    <button class="btn2" id="resetData" type="button">Reset demo data</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+
+/* ---------- Dummy knowledge (mirrors the kb/ files) ---------- */
+const CONTACT={front:"+91 00000 00001",couns:"Ms. Sample Counsellor",counsMail:"admissions.campusa@example.com",counsPhone:"+91 00000 00002",accounts:"accounts.campusa@example.com",transport:"transport.campusa@example.com",principal:"principal.campusa@example.com",central:"central@example.com",hr:"hr@example.com"};
+const OWNERS={
+  "Academics":{first:"Class teacher",backup:"Coordinator"},
+  "Fees and receipts":{first:"Accounts office",backup:"Principal"},
+  "Transport":{first:"Transport coordinator",backup:"Principal"},
+  "Uniform, books, ID card":{first:"Front office",backup:"Coordinator"},
+  "Safety, health, bullying":{first:"Principal (immediately)",backup:"Vice principal"},
+  "Something else":{first:"Front office",backup:"Principal"}
+};
+const SRC=t=>`<span class="src">Source: ${t} (dummy)</span>`;
+const A={
+ admission:()=>`<p>Here is how admission works at Campus A:</p><ul><li>Enquiry by phone, walk-in or this chat</li><li>Campus visit and counselling with the admission counsellor (in person)</li><li>Admission test for Grade 2 and above. Pre-primary to Grade 1 have an informal interaction</li><li>Application form with documents</li><li>Pay the confirmation amount</li><li>Submit remaining documents; admission is final after verification</li></ul><p>Classes offered: Nursery to Grade 10. Admission tests are on weekends in March and April.</p>${SRC("admissions.md")}`,
+ age:()=>`<p>Minimum age, as on 31 May of the admission year:</p><table><tr><th>Class</th><th>Age</th></tr><tr><td>Nursery</td><td>3 years</td></tr><tr><td>LKG</td><td>4 years</td></tr><tr><td>UKG</td><td>5 years</td></tr><tr><td>Grade 1</td><td>6 years</td></tr></table><p>A child below the minimum age may be considered only with a written request from the parent and the principal's approval. I can't promise this.</p>${SRC("admissions.md")}`,
+ documents:()=>`<p>Documents required:</p><ul><li>Child's birth certificate</li><li>Aadhaar card of the child and both parents</li><li>Previous school transfer certificate and bonafide (Grade 1 and above)</li><li>Previous year report card (Grade 1 and above)</li><li>4 passport size photographs</li></ul><p>You don't need to bring these at the enquiry stage. They are collected after the admission test.</p>${SRC("documents.md")}`,
+ fees:()=>`<p>Fee structure for 2026-27:</p><table><tr><th>Class</th><th>Admission (once)</th><th>Annual</th><th>Per term (3)</th></tr><tr><td>Nursery-UKG</td><td>Rs 10,000</td><td>Rs 20,000</td><td>Rs 15,000</td></tr><tr><td>Grade 1-5</td><td>Rs 12,000</td><td>Rs 25,000</td><td>Rs 18,000</td></tr><tr><td>Grade 6-8</td><td>Rs 15,000</td><td>Rs 30,000</td><td>Rs 22,000</td></tr><tr><td>Grade 9-10</td><td>Rs 18,000</td><td>Rs 35,000</td><td>Rs 26,000</td></tr></table><p>Transport, uniform and books are charged separately.</p>${SRC("fees.md")}`,
+ receipt:()=>`<p>You can pay fees online through the school portal, or at the accounts office from 9:00 to 15:00 on working days. Term fees are due on 10 June, 10 September and 10 December.</p><p>Receipts are issued by the accounts office. If you lost one, ask for a duplicate there (${CONTACT.accounts}).</p>${SRC("fees.md")}`,
+ curriculum:()=>`<p>Campus A follows the state board syllabus, with activity-based learning in Nursery to Grade 5.</p><ul><li>Maximum 25 students per class in primary</li><li>Weekly values class</li><li><b>Little Explorers</b>: communication and confidence building (pre-primary and primary)</li><li><b>Foundation Track</b>: coaching for competitive exams (Grade 6 to 10)</li></ul><p>Facilities: air-conditioned classrooms, audio-visual room, library, playground.</p>${SRC("curriculum.md")}`,
+ test:()=>`<p>Admission test: Grade 2 and above have a test on weekends in March and April; dates are announced by the admission office. Pre-primary to Grade 1 have an informal interaction with the teacher instead.</p>${SRC("admissions.md")}`,
+ dates:()=>`<p>I don't have exact admission dates or a last date in my approved information, and I don't want to guess. The admission office is open on Sundays from 10:00 to 14:00 during the admission season, November to June.</p><p>The admission counsellor can confirm the dates for your child's class. Would you like to leave your details?</p>${SRC("contacts.md")}`,
+ facilities:()=>`<p>Campus facilities: air-conditioned classrooms, an audio-visual room, a library and a playground.</p><p>I don't have details on other facilities. The campus visit is the best way to see them.</p>${SRC("curriculum.md")}`,
+ uniform:()=>`<p>Uniform, books and transport are charged separately from the fee structure. ID cards, uniforms and books are given within the first month of the academic year. The front office can share uniform details and prices.</p>${SRC("fees.md, faq.md")}`,
+ classsize:()=>`<p>Classes in primary have a maximum of 25 students, so each child gets individual attention.</p>${SRC("curriculum.md")}`,
+ thanks:()=>`<p>You're welcome! Is there anything else I can help with?</p>`,
+ help:()=>`<p>I can answer questions about admissions, fees, documents, curriculum, the calendar and transport. I can also take your details for the admission counsellor, or log a concern for the right person. Choose a topic below or type your question.</p>`,
+ hostel:()=>`<p>Hostel facilities are not available at this campus.</p>${SRC("admissions.md")}`,
+ calendar:()=>`<p>Academic calendar 2026-27:</p><ul><li>Term 1 exams: 15 to 22 September</li><li>Term 2 exams: 10 to 18 December</li><li>Annual exams: 16 to 27 March 2027</li><li>Holidays: Dussehra 19 to 21 Oct, Diwali 8 to 11 Nov, Christmas 25 Dec, Sankranti 13 to 16 Jan, summer vacation from 1 May</li><li>Working Saturdays: first and third of each month</li></ul>${SRC("calendar.md")}`,
+ ptm:()=>`<p>Parent-teacher meetings are held after each term exam, on the last Saturday of September, December and March, from 9:30 to 12:30. Your class teacher gives you a slot time.</p><p>For something urgent between meetings, meet the class teacher by appointment, Monday to Friday, 15:30 to 16:30.</p>${SRC("ptm.md")}`,
+ transport:()=>`<p>Buses cover areas within 12 km of the campus on four routes: North, South, East and Central. Stops are set by the transport office based on enough requests from an area.</p><p>I don't have a child's bus timing or stop. The transport coordinator shares that (${CONTACT.transport}). To request a new stop, I can log it for them.</p>${SRC("transport.md")}`,
+ timing:()=>`<p>Classes run 8:45 to 15:15 for Grade 1 and above. Pre-primary ends at 12:30.</p><p>Office hours: Monday to Friday 8:30 to 16:30, Saturday 8:30 to 13:00. During admission season (November to June) the admission office is also open on Sundays from 10:00 to 14:00.</p>${SRC("faq.md, contacts.md")}`,
+ contact:()=>`<dl class="kv"><dt>Campus</dt><dd>Demo International School, Campus A, 1 Sample Road, Sample City</dd><dt>Front office</dt><dd>${CONTACT.front}</dd><dt>Admissions</dt><dd>${CONTACT.couns}, ${CONTACT.counsMail}, ${CONTACT.counsPhone}</dd><dt>Accounts</dt><dd>${CONTACT.accounts}</dd><dt>Principal's office</dt><dd>${CONTACT.principal}</dd></dl>${SRC("contacts.md")}`,
+ hiring:()=>`<p>There are no openings listed right now. You can send your resume to ${CONTACT.hr} with the subject "Application: &lt;position&gt;". Teaching positions need a relevant degree and a teaching qualification.</p><p>I can't promise an interview or a job.</p>${SRC("hiring.md")}`,
+ about:()=>`<p>Small classes of at most 25 in primary, value-based education, and the Little Explorers and Foundation Track programmes.</p><p>Registered society: Demo Education Society. Affiliation: state board, number DUMMY-0000. Founded 2005.</p>${SRC("faq.md, registration.md")}`,
+ compare:()=>`<p>I can't compare us with other schools. What I can tell you is what we offer: small classes, value-based education and two focused programmes. Would you like to visit the campus and judge for yourself?</p>${SRC("faq.md")}`,
+ sibling:()=>`<p>There is a 5 percent sibling concession on the annual fee for the second child, confirmed in writing by the principal.</p><p>I can't offer or promise any other discount. For anything beyond that, the admission counsellor can help.</p>${SRC("discounts_policy.md")}`,
+ discount:()=>`<p>I'm not able to offer or negotiate discounts. The only concession I can confirm is a 5 percent sibling concession on the annual fee. For anything else, the admission counsellor will talk to you directly.</p>${SRC("discounts_policy.md")}`,
+ marks:()=>`<p>Marks and report cards are shared in person by the class teacher, so I can't show them in chat. If you want, I can log a request to the class teacher.</p>`,
+ privacy:()=>`<p>I can't share information about other students or parents. Student and parent details are private.</p>`,
+ outofscope:()=>`<p>I can only help with questions about the school: admissions, fees, calendar, transport and parent support. Is there something about the school I can help with?</p>`,
+ unknown:()=>`<p>I don't have that in my approved information, and I don't want to guess. I can connect you to a person at the front office who can answer.</p>`
+};
+
+/* ---------- State ---------- */
+const today=()=>new Date().toLocaleDateString("en-IN",{day:"2-digit",month:"short"});
+const seed=()=>({
+  enq:[{id:"E-1001",parent:"Sample Parent",student:"Sample Child",cls:"Grade 1",phone:"9000000002",campus:"Campus A",to:CONTACT.couns,status:"Contacted",when:today(),note:"Sample"}],
+  tix:[{id:"T-1001",cat:"Transport",text:"Sample: no bus stop in our area",parent:"Sample Parent",phone:"9000000001",first:"Transport coordinator",backup:"Principal",status:"In progress",when:today(),urgent:false,sample:true}],
+  calls:[]
+});
+let S=Object.assign({group:null,flow:null,step:null,d:{}},seed());
+let enqN=1002,tixN=1002;
+
+/* ---------- Chat engine ---------- */
+const msgs=$("#msgs"),chips=$("#chips"),input=$("#text");
+function scroll(){msgs.scrollTop=msgs.scrollHeight}
+function add(cls,html,asText){
+  const el=document.createElement("div"); el.className="m "+cls;
+  if(asText) el.textContent=html; else el.innerHTML=html;
+  msgs.appendChild(el); scroll(); return el;
+}
+async function say(...parts){
+  for(const p of parts){
+    const html=typeof p==="string"?p:p.html, cls=typeof p==="string"?"bot":"bot "+p.cls;
+    const t=document.createElement("div"); t.className="m bot typing"; t.innerHTML="<i></i><i></i><i></i>"; msgs.appendChild(t); scroll();
+    await wait(Math.min(220+html.length*1.2,800)); t.remove(); add(cls,html);
+  }
+}
+function setChips(list){
+  chips.innerHTML="";
+  list.forEach(c=>{const b=document.createElement("button");b.type="button";b.className="chip"+(c.alt?" alt":"");b.textContent=c.label||c;b.onclick=()=>send(c.label||c);chips.appendChild(b)});
+}
+const MENU1=["Admission process","Age & eligibility","Documents needed","Fees","Curriculum & programmes","Book a campus visit","Leave my details","Hiring","About the school"];
+const MENU2=["Calendar & holidays","Exam dates","PTM info","Fee payment & receipts","Transport","Share a concern","Check ticket status","Curriculum & programmes"];
+function menu(){ const m=(S.group===2?MENU2:MENU1).slice(); setChips([...m.map(x=>({label:x})),{label:"Talk to a person",alt:true}]); }
+function endFlow(){S.flow=null;S.step=null;S.d={}}
+
+async function send(text){
+  text=text.trim(); if(!text) return;
+  add("you",text,true); chips.innerHTML=""; input.value="";
+  await route(text);
+  if(!chips.children.length && !S.flow) menu();
+}
+$("#form").addEventListener("submit",e=>{e.preventDefault();send(input.value)});
+
+async function welcome(){
+  endFlow(); S.group=null; msgs.innerHTML=""; chips.innerHTML="";
+  await say("Hello! I'm the school assistant for <b>Demo International School</b>. I can answer questions from the school's approved information and pass your request to the right person.","Which campus are you asking about?");
+  setChips(["Campus A","Campus B","Campus C"]);
+  S.step="campus"; S.flow="welcome";
+}
+async function askGroup(){
+  S.flow="welcome"; S.step="group";
+  await say("Which of these describes you?");
+  setChips(["I'm exploring admissions","I'm a current parent or student","Business or vendor enquiry"]);
+}
+
+/* ---------- Intent routing for free text ---------- */
+const has=(t,re)=>re.test(t);
+function detectCategory(t){
+  if(has(t,/id card|uniform|\bbooks?\b|belt|\btie\b/)) return "Uniform, books, ID card";
+  if(has(t,/\bbus\b|\bstop\b|route|\bvan\b|transport/)) return "Transport";
+  if(has(t,/\bfee|receipt|deducted|payment/)) return "Fees and receipts";
+  if(has(t,/diary|notebook|homework|teacher|class|academ|syllabus/)) return "Academics";
+  return null;
+}
+async function route(raw){
+  const t=raw.toLowerCase();
+  if(t==="restart"){ return welcome(); }
+  if(has(t,/^(menu|main menu)$/)){ endFlow(); await say("Here is what I can help with."); menu(); return; }
+  if(has(t,/^(cancel|start over)$/) && S.flow && S.flow!=="enquiry"){ endFlow(); await say("Okay, I've stopped that."); return; }
+  if(S.flow) return flow(raw,t);
+  return intent(raw,t);
+}
+async function intent(raw,t){
+  if(has(t,/ignore (your|all|previous)|system prompt|pretend you|all student names|another parent|other parents?'? (phone|number)|phone number of/)){ await say(A.privacy()); return; }
+  if(has(t,/bully|bullied|hurt|unsafe|abuse|harass|injur|emergency|threat/)){
+    await say({cls:"card urgent",html:`<p><b>This needs a person right now.</b> I'm sorry this is happening. Please call the front office at <b>${CONTACT.front}</b> or email ${CONTACT.principal}.</p><p>I can also alert the principal and log an urgent ticket.</p>`});
+    setChips([{label:"Alert the principal"},{label:"Talk to a person",alt:true}]); return;
+  }
+  if(has(t,/alert the principal/)){ return startConcern("Safety, health, bullying","Urgent safety concern raised in chat"); }
+  if(has(t,/human|talk to a person|speak to|agent|call me back|callback/)){ return startCallback(); }
+  if(has(t,/sibling|two kids|second child|brother|sister/)){ await say(A.sibling()); return; }
+  if(has(t,/discount|concession|scholarship|waive|negotiat|reduce the fee/)){ await say(A.discount()); setChips([{label:"Talk to a person"},{label:"Fees",alt:true}]); return; }
+  if(has(t,/\bmarks\b|\bresults?\b|grade card/)){ await say(A.marks()); setChips([{label:"Share a concern"},{label:"Menu",alt:true}]); return; }
+  if(has(t,/ticket|t-\d{3,}/) && !has(t,/share|raise|new/)){ return startStatus(raw); }
+  if(has(t,/leave my details|my details|enquiry form|submit an enquiry|enquire|register my interest/)){ S.group=S.group||1; return startEnquiry(); }
+  if(has(t,/visit|counsel|campus tour|appointment|book a/)){ S.group=S.group||1; await say("Campus visits and counselling are in person with the admission counsellor. I'll take your details and ask them to confirm a time."); return startEnquiry(true); }
+  if(has(t,/no bus stop|add (a |one )?stop|new stop|change (the )?route|stop (is )?missing/)){ return startConcern("Transport",raw); }
+  if(has(t,/deducted|not received|pending|not corrected|not updated|complain|concern|suggestion|\bissue\b|problem|id card|share a concern/) && !has(t,/documents?/)){
+    const cat=detectCategory(t); S.group=S.group||2;
+    return startConcern(cat, has(t,/^share a concern$/)?null:raw);
+  }
+  if(has(t,/receipt|payment|pay online|how do i pay|pay fee|pay the fee/)){ S.group=S.group||2; await say(A.receipt()); return; }
+  if(has(t,/\bfees?\b|cost|tuition|how much|price/)){ await say(A.fees()); return; }
+  if(has(t,/document|certificate|aadhaar|\btc\b|bonafide/)){ S.group=S.group||1; await say(A.documents()); return; }
+  if(has(t,/\bage\b|how old|eligib|minimum|\d+\s*years?|too young|too old/)){ S.group=S.group||1; await say(A.age()); return; }
+  if(has(t,/hostel/)){ await say(A.hostel()); return; }
+  if(has(t,/when does admission|admission (start|open|date|season)|last date|deadline|intake|when (can|should) i apply/)){ S.group=S.group||1; await say(A.dates()); setChips([{label:"Leave my details"},{label:"Menu",alt:true}]); return; }
+  if(has(t,/entrance|admission test|test for|interview|assessment/)){ S.group=S.group||1; await say(A.test()); return; }
+  if(has(t,/facilit|playground|library|infrastructure|classroom|\blab\b|campus like/)){ await say(A.facilities()); return; }
+  if(has(t,/uniform|stationery|school bag/)){ await say(A.uniform()); return; }
+  if(has(t,/students per class|class strength|how many students|class size|teacher.?student/)){ await say(A.classsize()); return; }
+  if(has(t,/calendar|holiday|vacation|diwali|dussehra|christmas|sankranti|exam|term/)){ S.group=S.group||2; await say(A.calendar()); return; }
+  if(has(t,/ptm|parent.?teacher|meeting/)){ S.group=S.group||2; await say(A.ptm()); return; }
+  if(has(t,/\bbus\b|transport|route|\bvan\b|\bstop\b/)){ S.group=S.group||2; await say(A.transport()); setChips([{label:"Share a concern"},{label:"Menu",alt:true}]); return; }
+  if(has(t,/curriculum|syllabus|board|programme|program|foundation|explorer|class size|cbse|icse/)){ await say(A.curriculum()); return; }
+  if(has(t,/timing|school time|what time|office hours|school hours|hours|open on|sunday/)){ await say(A.timing()); return; }
+  if(has(t,/contact|phone number|email|address|counsellor|principal|where is/)){ await say(A.contact()); return; }
+  if(has(t,/^(thanks|thank you|ok|okay|great|cool|bye)\b/)){ await say(A.thanks()); return; }
+  if(has(t,/^(help|options|need (some )?information|i need info|what can you (do|help))/)){ await say(A.help()); return; }
+  if(has(t,/hiring|job|teacher vacanc|vacancies for|career|resume|teaching position/)){ await say(A.hiring()); return; }
+  if(has(t,/better than|compare|which school/)){ await say(A.compare()); return; }
+  if(has(t,/different|unique|why (should i choose|your|this)|choose (your|this)|about the school|affiliation|registered|founded|tell me about/)){ await say(A.about()); return; }
+  if(has(t,/admission|apply|process|join|enrol|enroll|admit|interested|seats?\b|vacanc|register|registration/)){ S.group=S.group||1; await say(A.admission()); setChips([{label:"Leave my details"},{label:"Documents needed"},{label:"Fees"},{label:"Menu",alt:true}]); return; }
+  if(has(t,/^(hi|hello|hey|namaste|good (morning|afternoon|evening))\b/)){ await say("Hello! What would you like to know about the school?"); return; }
+  if(has(t,/capital of|weather|joke|cricket score|stock|movie/)){ await say(A.outofscope()); return; }
+  await say(A.unknown()); setChips([{label:"Talk to a person"},{label:"Menu",alt:true}]);
+}
+
+/* ---------- Flows ---------- */
+async function flow(raw,t){
+  if(S.flow==="welcome") return welcomeFlow(raw,t);
+  if(S.flow==="enquiry") return enquiryFlow(raw,t);
+  if(S.flow==="concern") return concernFlow(raw,t);
+  if(S.flow==="status") return statusFlow(raw,t);
+  if(S.flow==="callback") return callbackFlow(raw,t);
+}
+async function welcomeFlow(raw,t){
+  if(S.step==="campus"){
+    if(has(t,/^campus [bc]$/)){ await say("This demo has dummy content for <b>Campus A</b> only. In the real version, each campus has its own information. I'll continue with Campus A."); return askGroup(); }
+    if(has(t,/^campus a$/)){ return askGroup(); }
+    /* The visitor typed a question instead of picking a campus: answer it, for Campus A. */
+    endFlow(); await say("I'll answer for Campus A, the demo campus."); return intent(raw,t);
+  }
+  if(S.step==="group"){
+    if(has(t,/^i'm exploring admissions$/)){ S.group=1; endFlow(); await say("Great. Ask me anything about admissions, or choose a topic below."); return; }
+    if(has(t,/^i'm a current parent or student$/)){ S.group=2; endFlow(); await say("Welcome. I can help with the calendar, fees, transport and PTM, or log a concern for the right person."); return; }
+    if(has(t,/^business or vendor enquiry$/)){ endFlow(); await say({cls:"card",html:`<p>Business and vendor enquiries are handled by the central office: <b>${CONTACT.central}</b>.</p><p>A separate assistant for this group will come in a later phase.</p>`}); setChips([{label:"Restart"}]); return; }
+    endFlow(); return intent(raw,t);
+  }
+}
+/* Enquiry capture */
+const CLASSES=["Nursery","LKG","UKG","Grade 1","Grade 2","Grade 3","Grade 4","Grade 5","Grade 6","Grade 7","Grade 8","Grade 9","Grade 10"];
+function startEnquiry(visit){
+  S.flow="enquiry"; S.step="parent"; S.d={visit:!!visit};
+  return say("What is the parent or guardian's name?");
+}
+const phoneOK=v=>{let d=v.replace(/[\s\-+]/g,"");if(d.length===12&&d.startsWith("91"))d=d.slice(2);return /^[6-9]\d{9}$/.test(d)?d:null};
+async function enquiryFlow(raw,t){
+  const d=S.d;
+  switch(S.step){
+    case "parent": d.parent=raw; S.step="student"; return say(`Thank you, ${esc(raw)}. What is the child's name?`);
+    case "student": d.student=raw; S.step="cls"; await say("Which class is the child applying for?"); setChips(CLASSES.map(c=>({label:c}))); return;
+    case "cls": {
+      const m=CLASSES.find(c=>c.toLowerCase()===t); if(!m){ await say("Please choose a class from the options."); setChips(CLASSES.map(c=>({label:c}))); return; }
+      d.cls=m; S.step="phone"; return say("What is the best mobile number to reach you?");
+    }
+    case "phone": {
+      const p=phoneOK(raw); if(!p){ return say("That doesn't look like a valid 10 digit mobile number. Please enter it again, for example 9876543210."); }
+      d.phone=p; S.step="prev"; await say("Which school did the child attend before, and why are you changing? You can skip this."); setChips([{label:"Skip",alt:true}]); return;
+    }
+    case "prev": d.prev=has(t,/^skip$/)?"":raw; S.step="pref"; await say("When would you like to visit the campus?"); setChips(["Weekday morning","Weekday afternoon","Saturday","Sunday (Nov to Jun)","No visit for now"].map(x=>({label:x}))); return;
+    case "pref": d.pref=raw; S.step="confirm"; await say({cls:"card",html:`<p><b>Please check your details</b></p><dl class="kv"><dt>Parent</dt><dd>${esc(d.parent)}</dd><dt>Child</dt><dd>${esc(d.student)} (${esc(d.cls)})</dd><dt>Mobile</dt><dd>${esc(d.phone)}</dd><dt>Previous school</dt><dd>${esc(d.prev||"Not given")}</dd><dt>Visit</dt><dd>${esc(d.pref)}</dd></dl>`}); setChips([{label:"Submit enquiry"},{label:"Start over",alt:true}]); return;
+    case "confirm":
+      if(has(t,/start over/)){ endFlow(); return startEnquiry(); }
+      if(has(t,/submit/)){
+        const dup=S.enq.find(e=>e.phone===d.phone);
+        if(dup){ await say({cls:"card",html:`<p>We already have an enquiry from this number (<b>${dup.id}</b>). I've added a note to it instead of creating a duplicate, so you won't get two calls.</p>`}); dup.note="Repeat enquiry via chat"; }
+        else{
+          const e={id:"E-"+(enqN++),parent:d.parent,student:d.student,cls:d.cls,phone:d.phone,campus:"Campus A",to:CONTACT.couns,status:"New",when:today(),note:d.pref};
+          S.enq.unshift(e);
+          await say({cls:"card",html:`<p><b>Thank you. Your enquiry ${e.id} is submitted.</b></p><dl class="kv"><dt>Sent to</dt><dd>${CONTACT.couns}, Campus A admissions</dd><dt>Next</dt><dd>A call within 1 working day</dd><dt>Visit</dt><dd>${esc(d.pref)}</dd></dl><p>If nobody has contacted you, a reminder goes to the counsellor and then the front office.</p>`});
+        }
+        refreshStaff(); endFlow(); setChips([{label:"Fees"},{label:"Documents needed"},{label:"Menu",alt:true}]); return;
+      }
+      return say("Please choose Submit enquiry or Start over.");
+  }
+}
+/* Concerns / tickets */
+const CATS=Object.keys(OWNERS);
+async function startConcern(cat,text){
+  S.flow="concern"; S.d={cat:cat,text:text||""};
+  if(!S.d.cat){ S.step="cat"; await say("I'm sorry you're facing a problem. What is it about?"); setChips(CATS.map(c=>({label:c}))); return; }
+  if(!S.d.text){ S.step="text"; await say(`Got it: <b>${esc(S.d.cat)}</b>. Please describe the concern in a sentence or two.`); return; }
+  S.step="name"; await say(`Thank you. I'll log this under <b>${esc(S.d.cat)}</b>. What is your name?`);
+}
+async function concernFlow(raw,t){
+  const d=S.d;
+  switch(S.step){
+    case "cat": { const c=CATS.find(x=>x.toLowerCase()===t); if(!c){ await say("Please choose one of the options."); setChips(CATS.map(x=>({label:x}))); return; } d.cat=c; S.step="text"; return say(`Got it: <b>${esc(c)}</b>. Please describe the concern in a sentence or two.`); }
+    case "text": d.text=raw; S.step="name"; return say("Thank you. What is your name?");
+    case "name": d.parent=raw; S.step="phone"; return say("What mobile number should we use to update you?");
+    case "phone": {
+      const p=phoneOK(raw); if(!p) return say("That doesn't look like a valid 10 digit mobile number. Please enter it again.");
+      d.phone=p; const o=OWNERS[d.cat]; const urgent=d.cat==="Safety, health, bullying";
+      const tk={id:"T-"+(tixN++),cat:d.cat,text:d.text,parent:d.parent,phone:p,first:o.first,backup:o.backup,status:"Received",when:today(),urgent};
+      S.tix.unshift(tk); refreshStaff();
+      await say({cls:"card"+(urgent?" urgent":""),html:`<p><b>Your concern is logged. Ticket ${tk.id}.</b></p><dl class="kv"><dt>Sent to</dt><dd>${esc(o.first)}</dd><dt>Acknowledged within</dt><dd>${urgent?"Immediately":"1 working day"}</dd><dt>If not resolved</dt><dd>${urgent?"Vice principal is alerted":"After 3 working days it goes to the "+esc(o.backup)}</dd></dl><p>You can check progress any time by asking for the status of ${tk.id}.</p>`});
+      endFlow(); setChips([{label:"Check ticket status"},{label:"Menu",alt:true}]); return;
+    }
+  }
+}
+/* Ticket status */
+async function startStatus(raw){
+  S.flow="status"; S.d={}; const m=raw.match(/t-\d{3,}/i);
+  if(m){ S.d.id=m[0].toUpperCase(); S.step="phone"; return say(`To protect your privacy, please enter the mobile number registered for ${S.d.id}.`); }
+  S.step="id"; return say("Please enter your ticket number, for example T-1001.");
+}
+async function statusFlow(raw,t){
+  if(S.step==="id"){ const m=raw.match(/t-\d{3,}/i); if(!m) return say("I couldn't read a ticket number. It looks like T-1001."); S.d.id=m[0].toUpperCase(); S.step="phone"; return say(`Please enter the mobile number registered for ${S.d.id}.`); }
+  if(S.step==="phone"){
+    const p=phoneOK(raw); const tk=S.tix.find(x=>x.id===S.d.id);
+    if(!p || !tk || tk.phone!==p){ endFlow(); await say("I couldn't match that ticket number and mobile number. Please check both, or I can connect you to the front office."); setChips([{label:"Check ticket status"},{label:"Talk to a person",alt:true}]); return; }
+    const cls=tk.status==="Resolved"?"ok":(tk.status==="In progress"?"warn":"new");
+    endFlow();
+    await say({cls:"card",html:`<p><b>${tk.id}</b>: ${esc(tk.cat)}</p><dl class="kv"><dt>Status</dt><dd>${esc(tk.status)}</dd><dt>With</dt><dd>${esc(tk.first)}</dd><dt>Logged on</dt><dd>${esc(tk.when)}</dd></dl>${tk.status==="Resolved"?"<p>This has been marked resolved. If it is not, tell me and I will reopen it.</p>":"<p>Staff are working on this. You will be updated when it changes.</p>"}`});
+    setChips([{label:"Menu"}]);
+  }
+}
+/* Callback / human handoff */
+async function startCallback(){
+  S.flow="callback"; S.step="name"; S.d={};
+  await say(`Of course. You can call the front office at <b>${CONTACT.front}</b> (Mon to Fri 8:30 to 16:30, Sat 8:30 to 13:00), or I can ask them to call you.`,"What is your name?");
+}
+async function callbackFlow(raw,t){
+  const d=S.d;
+  if(S.step==="name"){ d.name=raw; S.step="phone"; return say("What mobile number should they call?"); }
+  if(S.step==="phone"){
+    const p=phoneOK(raw); if(!p) return say("That doesn't look like a valid 10 digit mobile number. Please enter it again.");
+    S.calls.unshift({name:d.name,phone:p,when:today(),to:"Front office"}); refreshStaff(); endFlow();
+    await say({cls:"card",html:`<p><b>Done.</b> The front office will call you back on the next working day.</p>`}); setChips([{label:"Menu"}]);
+  }
+}
+
+/* ---------- Staff view ---------- */
+function pill(s){const c={New:"new",Contacted:"warn","Visit booked":"ok",Received:"new","In progress":"warn",Resolved:"ok"}[s]||"new";return `<span class="pill ${c}">${esc(s)}</span>`}
+function refreshStaff(){
+  const n=S.enq.length+S.tix.length+S.calls.length; const sc=$("#staffCount"); sc.textContent=String(n); sc.hidden=n===0;
+  $("#enqTable").innerHTML=S.enq.length?`<table class="t"><thead><tr><th>ID</th><th>Parent</th><th>Child and class</th><th>Mobile</th><th>Routed to</th><th>Status</th><th>Logged</th><th>Note</th></tr></thead><tbody>${S.enq.map((e,i)=>`<tr><td><b>${e.id}</b></td><td>${esc(e.parent)}</td><td>${esc(e.student)} · ${esc(e.cls)}</td><td>${esc(e.phone)}</td><td>${esc(e.to)}</td><td><select data-enq="${i}" aria-label="Status of ${e.id}">${["New","Contacted","Visit booked"].map(s=>`<option${s===e.status?" selected":""}>${s}</option>`).join("")}</select></td><td>${esc(e.when)}</td><td>${esc(e.note||"")}${e.id==="E-1001"?' <span class="sample">sample</span>':""}</td></tr>`).join("")}</tbody></table>`:'<p class="empty">No enquiries yet.</p>';
+  $("#tixTable").innerHTML=S.tix.length?`<table class="t"><thead><tr><th>ID</th><th>Category</th><th>Concern</th><th>Parent</th><th>First contact</th><th>Backup</th><th>Status</th><th>Logged</th></tr></thead><tbody>${S.tix.map((x,i)=>`<tr><td><b>${x.id}</b>${x.urgent?' <span class="pill bad">Urgent</span>':""}</td><td>${esc(x.cat)}</td><td>${esc(x.text)}</td><td>${esc(x.parent)}<br><span class="sample">${esc(x.phone)}${x.sample?" · sample":""}</span></td><td>${esc(x.first)}</td><td>${esc(x.backup)}</td><td><select data-tix="${i}" aria-label="Status of ${x.id}">${["Received","In progress","Resolved"].map(s=>`<option${s===x.status?" selected":""}>${s}</option>`).join("")}</select></td><td>${esc(x.when)}</td></tr>`).join("")}</tbody></table>`:'<p class="empty">No concerns yet.</p>';
+  $("#callTable").innerHTML=S.calls.length?`<table class="t" style="min-width:420px"><thead><tr><th>Name</th><th>Mobile</th><th>To</th><th>Logged</th></tr></thead><tbody>${S.calls.map(c=>`<tr><td>${esc(c.name)}</td><td>${esc(c.phone)}</td><td>${esc(c.to)}</td><td>${esc(c.when)}</td></tr>`).join("")}</tbody></table>`:'<p class="empty">No callback requests yet.</p>';
+}
+document.addEventListener("change",e=>{
+  const a=e.target.dataset; if(a.enq!==undefined){S.enq[+a.enq].status=e.target.value}
+  if(a.tix!==undefined){S.tix[+a.tix].status=e.target.value}
+});
+$("#rules").innerHTML=Object.entries(OWNERS).map(([k,v])=>`<div><b>${esc(k)}</b>First: ${esc(v.first)}<br>Backup: ${esc(v.backup)}</div>`).join("");
+
+/* ---------- Tabs, guide, reset ---------- */
+function showTab(which){
+  const chat=which==="chat";
+  $("#view-chat").hidden=!chat; $("#view-staff").hidden=chat;
+  $("#tab-chat").setAttribute("aria-selected",chat); $("#tab-staff").setAttribute("aria-selected",!chat);
+  if(!chat) refreshStaff();
+}
+$("#tab-chat").onclick=()=>showTab("chat"); $("#tab-staff").onclick=()=>showTab("staff");
+const TRY=[
+ ["Ask about admissions","What is the admission process?","Prospective parent"],
+ ["Check the age rule","My child is 5 years 8 months. Can she join Grade 1?","Won't promise an exception"],
+ ["Leave an enquiry","Leave my details","Checks the phone number, avoids duplicates, routes it"],
+ ["Ask for a discount","Can you give me 20 percent discount?","Won't promise, offers the real policy"],
+ ["Existing parent: PTM","When is the next PTM?","Current parent or student"],
+ ["Share a concern","My son's diary is not corrected","Creates a ticket and routes it"],
+ ["Check a ticket","Check status of T-1001","Use mobile 9000000001"],
+ ["Safety concern","My child is being bullied","Goes to a person at once"],
+ ["Something it doesn't know","Do you have a swimming pool?","Says it doesn't know, offers a person"]
+];
+$("#try").innerHTML=TRY.map((x,i)=>`<button type="button" data-i="${i}">${esc(x[0])}<small>${esc(x[2])}</small></button>`).join("");
+$("#try").addEventListener("click",e=>{const b=e.target.closest("button"); if(!b) return; showTab("chat"); send(TRY[+b.dataset.i][1]);});
+$("#restart").onclick=()=>welcome();
+$("#resetData").onclick=()=>{const f=seed(); S.enq=f.enq;S.tix=f.tix;S.calls=[];enqN=1002;tixN=1002;refreshStaff();};
+refreshStaff(); welcome();
+</script>
