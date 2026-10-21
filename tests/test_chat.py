@@ -40,12 +40,13 @@ def test_prompt_contains_rules_knowledge_and_group(client, fake):
 
 
 def test_history_is_kept_per_session_and_capped(client, fake):
-    for i in range(10):
+    turns = config.HISTORY_LIMIT // 2 + 3  # more turns than the memory holds
+    for i in range(turns):
         chat(client, f"message {i}", session_id="a")
     chat(client, "other session", session_id="b")
     sent_last_in_a = fake.calls[-2]["messages"]
     assert len(sent_last_in_a) == config.HISTORY_LIMIT + 1  # remembered messages + the new one
-    assert sent_last_in_a[-1].content == "message 9"
+    assert sent_last_in_a[-1].content == f"message {turns - 1}"
     assert [m.content for m in fake.calls[-1]["messages"]] == ["other session"]
 
 

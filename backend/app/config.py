@@ -21,7 +21,8 @@ def _int(name: str, default: int) -> int:
 DEMO_MODE = _bool("DEMO_MODE", True)
 
 # How many recent messages the bot remembers per chat session.
-HISTORY_LIMIT = _int("HISTORY_LIMIT", 12)
+# 20 (not 12) so a whole enquiry conversation fits, from first detail to confirmation.
+HISTORY_LIMIT = _int("HISTORY_LIMIT", 20)
 
 # Longest message a visitor may send, in characters.
 MAX_MESSAGE_CHARS = 1000

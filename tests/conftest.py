@@ -8,8 +8,14 @@ os.environ["DEMO_MODE"] = "true"
 import pytest
 from fastapi.testclient import TestClient
 
-from backend.app import main, sessions
+from backend.app import db, main, sessions
 from backend.app.llm.fake_provider import FakeLLM
+
+
+@pytest.fixture(autouse=True)
+def fresh_db(tmp_path):
+    """Every test gets its own empty database."""
+    db.init_db(tmp_path / "test.db")
 
 
 @pytest.fixture

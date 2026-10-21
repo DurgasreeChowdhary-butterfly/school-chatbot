@@ -1,13 +1,15 @@
 """School chatbot backend. Start with: uvicorn backend.app.main:app --reload"""
 import json
 import logging
+import threading
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import config, sessions
+from . import config, db, jobs, sessions
 from .chat_service import FALLBACK_REPLY, handle_message
 from .knowledge import KB_DIR, load_all_campuses
 from .llm.base import LLMProvider
@@ -37,7 +39,17 @@ def set_provider(p: LLMProvider) -> None:
     _provider = p
 
 
-app = FastAPI(title="School Chatbot")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """On start: create the database and start the reminder job. On stop: stop the job."""
+    db.init_db()
+    stop = threading.Event()
+    jobs.start_background_job(stop)
+    yield
+    stop.set()
+
+
+app = FastAPI(title="School Chatbot", lifespan=lifespan)
 
 # The chat window files (chat.js, chat.css) and a test page that embeds them.
 WIDGET_DIR = KB_DIR.parent / "widget"

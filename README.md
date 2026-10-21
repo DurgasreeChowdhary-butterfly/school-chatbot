@@ -32,6 +32,14 @@ uvicorn backend.app.main:app --reload
   Optional: `data-campus="pilot-campus"` (skip the campus question), `data-open="true"`, `data-theme="light"` or `"dark"`.
 - School name, campuses and menu buttons come from `kb/school.json`.
 
+## Enquiries, reminders and notifications
+- The bot collects enquiry details, shows a summary and saves only after the visitor says yes. Saved in `data/chatbot.db` (SQLite).
+- Routing (counsellor, who handles which concern, reminder deadlines, class list) is in `kb/<campus>/routing.json`.
+- Notifications go to the `outbox` table and the server log. Real email is sent only if `SMTP_HOST`, `SMTP_USER`
+  and `SMTP_PASSWORD` are set in `.env` (optional: `SMTP_PORT`, default 587, and `SMTP_FROM`).
+- The reminder job runs every 15 minutes while the server is running.
+- To try a multi-turn conversation with the live model: `python scripts/live_conversation.py "first message" "second message"`
+
 ## Test
 - Automated tests (use a FakeLLM, no API calls, free): `python -m pytest`
   The browser tests need Chromium once: `python -m playwright install chromium`. Screenshots go to docs/screenshots/.

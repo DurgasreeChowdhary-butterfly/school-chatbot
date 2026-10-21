@@ -54,3 +54,36 @@
 - Bot replies are shown as plain text with simple lists and bold; links and emails are not clickable.
 - Only tested in Chromium; not yet in Safari or Firefox, or on a real phone.
 - The campus list only shows campuses that have a kb/ folder (now just Campus A).
+
+## Stage C: Enquiry capture (21 Oct 2026)
+
+**Built**
+- Tools `submit_enquiry` and `confirm_enquiry` (`enquiry_tools.py`), offered through the provider layer.
+  The class list in the tool comes from `kb/pilot-campus/routing.json`.
+- Backend validation (`validation.py`): names (letters only), class from the list, 10-digit Indian mobile
+  (accepts +91, 0, spaces, dashes), optional previous school/reason, visit preference.
+- Confirmation is enforced by the backend: `submit_enquiry` only checks and stores a draft; `confirm_enquiry`
+  refuses if the visitor has not sent a new message since the summary was made.
+- SQLite storage (`db.py`, file `data/chatbot.db`) with tables enquiries, tickets, callbacks, outbox.
+  References look like E-1001.
+- Duplicate check by mobile number per campus: a note is added to the existing enquiry instead.
+- Counsellor from `routing.json` (email can be overridden by `COUNSELLOR_EMAIL_PILOT` in .env).
+- Notifications (`notify.py`) go to the outbox table and the log (subject only). Real email only if SMTP settings exist.
+- Reminder job (`jobs.py`, every 15 minutes): enquiry still "New" after 1 working day -> reminder to the counsellor;
+  after 2 working days -> escalation to the front office. Working days are Monday to Friday.
+- Chat memory raised from 12 to 20 messages so a full enquiry conversation fits.
+
+**Tested**
+- pytest (FakeLLM): mobile and name validation, saved after confirmation, tools offered with the class list,
+  no confirm in the same turn, no confirm without submit, invalid and missing details, duplicate adds a note,
+  counsellor email override, working days over a weekend, reminder then escalation (not repeated), no reminder once contacted.
+- Live with Gemini (one 5-message conversation, throwaway database): the bot asked for details in groups,
+  showed a summary, waited for "yes", saved E-1001 and the outbox got the counsellor notification. Mobile masked in the log.
+
+**What failed and how it was fixed**
+- The history test assumed 12 messages; it now follows the setting.
+
+**Still weak**
+- School holidays are not counted as non-working days (only weekends).
+- Sessions are in memory: a pending (unconfirmed) enquiry is lost if the server restarts.
+- The duplicate check uses the mobile number only; two families sharing a phone would be merged into one enquiry with a note.

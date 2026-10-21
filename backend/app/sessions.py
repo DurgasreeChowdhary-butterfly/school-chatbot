@@ -16,6 +16,8 @@ class Session:
     history: deque = field(default_factory=lambda: deque(maxlen=config.HISTORY_LIMIT))
     last_seen: float = field(default_factory=time.time)
     turn: int = 0  # counts the visitor's messages
+    # Enquiry details checked by submit_enquiry, waiting for the visitor to confirm: {"details", "turn"}.
+    pending_enquiry: dict | None = None
 
 
 _sessions: dict[str, Session] = {}

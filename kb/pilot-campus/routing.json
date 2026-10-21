@@ -1,0 +1,32 @@
+{
+  "_note": "DUMMY DATA. Routing for enquiries, concerns and callbacks. Mirrors escalation.md and contacts.md: when you change one, change the other. Role emails not in contacts.md are made-up example.com placeholders.",
+  "classes": ["Nursery", "LKG", "UKG", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5",
+              "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10"],
+  "counsellor": "Admission counsellor",
+  "front_office": "Front office",
+  "roles": {
+    "Admission counsellor": {"name": "Ms. Sample Counsellor", "email": "admissions.campusa@example.com"},
+    "Front office": {"name": "Front office", "email": "frontoffice.campusa@example.com", "phone": "+91 00000 00001"},
+    "Accounts office": {"name": "Accounts office", "email": "accounts.campusa@example.com"},
+    "Transport coordinator": {"name": "Transport coordinator", "email": "transport.campusa@example.com"},
+    "Principal": {"name": "Principal", "email": "principal.campusa@example.com"},
+    "Vice principal": {"name": "Vice principal", "email": "viceprincipal.campusa@example.com"},
+    "Class teacher": {"name": "Class teacher", "email": "classteachers.campusa@example.com"},
+    "Coordinator": {"name": "Coordinator", "email": "coordinator.campusa@example.com"}
+  },
+  "categories": [
+    {"name": "Academics", "first": "Class teacher", "backup": "Coordinator"},
+    {"name": "Fees and receipts", "first": "Accounts office", "backup": "Principal"},
+    {"name": "Transport", "first": "Transport coordinator", "backup": "Principal"},
+    {"name": "Uniform, books, ID card", "first": "Front office", "backup": "Coordinator"},
+    {"name": "Safety, health, bullying", "first": "Principal", "backup": "Vice principal", "urgent": true},
+    {"name": "Admissions enquiry", "first": "Admission counsellor", "backup": "Front office"},
+    {"name": "Anything else", "first": "Front office", "backup": "Principal"}
+  ],
+  "deadlines_in_working_days": {
+    "enquiry_reminder": 1,
+    "enquiry_escalation": 2,
+    "ticket_acknowledge": 1,
+    "ticket_escalation": 3
+  }
+}
