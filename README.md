@@ -25,8 +25,16 @@ uvicorn backend.app.main:app --reload
   Invoke-RestMethod -Uri http://127.0.0.1:8000/chat -Method Post -ContentType "application/json" -Body $body
   ```
 
+## Chat window
+- Test page: http://127.0.0.1:8000/demo
+- To add it to any website, put one line before `</body>`:
+  `<script src="https://YOUR-SERVER/widget/chat.js" defer></script>`
+  Optional: `data-campus="pilot-campus"` (skip the campus question), `data-open="true"`, `data-theme="light"` or `"dark"`.
+- School name, campuses and menu buttons come from `kb/school.json`.
+
 ## Test
 - Automated tests (use a FakeLLM, no API calls, free): `python -m pytest`
+  The browser tests need Chromium once: `python -m playwright install chromium`. Screenshots go to docs/screenshots/.
 - Answer-quality test (uses the live model and your free-tier quota): start the server, then
   ```powershell
   python scripts/run_test_questions.py --out docs/test-runs/latest.json

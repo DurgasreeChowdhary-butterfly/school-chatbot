@@ -1,0 +1,18 @@
+{
+  "_note": "DUMMY DATA. Fictional school. Replace with the real school's details. Read by the chat window and the staff page.",
+  "school_name": "Demo International School",
+  "assistant_name": "School Assistant",
+  "campuses": [
+    {"id": "pilot-campus", "name": "Campus A"}
+  ],
+  "menus": {
+    "prospective": [
+      "Admission process", "Age and eligibility", "Documents needed", "Fees",
+      "Curriculum and programmes", "Book a campus visit", "Leave my details", "Hiring", "About the school"
+    ],
+    "existing": [
+      "Calendar and holidays", "Exam dates", "PTM info", "Fee payment and receipts",
+      "Transport", "Share a concern", "Check ticket status"
+    ]
+  }
+}

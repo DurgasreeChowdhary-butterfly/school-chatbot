@@ -1,0 +1,94 @@
+/* School chat window. Every class starts with "sc-" so it does not clash with the school website's styles.
+   Colours follow docs/school-chatbot-demo.html. Light theme first, dark theme below. */
+.sc-root {
+  --sc-bg: #F2F4F8; --sc-surface: #FFFFFF; --sc-ink: #172033; --sc-muted: #566178; --sc-line: #D8DDE8;
+  --sc-accent: #1D3A6B; --sc-accent-soft: #E4EBF7; --sc-on-accent: #FFFFFF;
+  --sc-gold: #E3A21A; --sc-gold-soft: #FFF3D6;
+  --sc-user-bg: #1D3A6B; --sc-user-fg: #FFFFFF;
+  --sc-good: #1E7B4F; --sc-bad: #B3261E; --sc-bad-soft: #FBE3E1;
+  --sc-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--sc-font); font-size: 15px; line-height: 1.5; color: var(--sc-ink);
+}
+@media (prefers-color-scheme: dark) {
+  .sc-root:not([data-theme="light"]) {
+    --sc-bg: #0E1420; --sc-surface: #172033; --sc-ink: #E7ECF5; --sc-muted: #9BA8BF; --sc-line: #2A3650;
+    --sc-accent: #8DB1EE; --sc-accent-soft: #1E2C48; --sc-on-accent: #0E1420;
+    --sc-gold: #F0B73A; --sc-gold-soft: #3A2F12;
+    --sc-user-bg: #2C5099; --sc-user-fg: #FFFFFF;
+    --sc-good: #5FD39A; --sc-bad: #FF8A80; --sc-bad-soft: #3F1B19;
+    color-scheme: dark;
+  }
+}
+.sc-root[data-theme="dark"] {
+  --sc-bg: #0E1420; --sc-surface: #172033; --sc-ink: #E7ECF5; --sc-muted: #9BA8BF; --sc-line: #2A3650;
+  --sc-accent: #8DB1EE; --sc-accent-soft: #1E2C48; --sc-on-accent: #0E1420;
+  --sc-gold: #F0B73A; --sc-gold-soft: #3A2F12;
+  --sc-user-bg: #2C5099; --sc-user-fg: #FFFFFF;
+  --sc-good: #5FD39A; --sc-bad: #FF8A80; --sc-bad-soft: #3F1B19;
+  color-scheme: dark;
+}
+.sc-root *, .sc-root *::before, .sc-root *::after { box-sizing: border-box; }
+.sc-root button { font: inherit; color: inherit; }
+.sc-root :focus-visible { outline: 3px solid var(--sc-gold); outline-offset: 2px; }
+
+/* Launcher button (bottom right) */
+.sc-launcher {
+  position: fixed; right: 20px; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 2147483000;
+  display: flex; align-items: center; gap: 8px; border: 0; border-radius: 999px; padding: 12px 18px;
+  background: var(--sc-accent); color: var(--sc-on-accent); font-weight: 600; cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .25);
+}
+.sc-launcher svg { width: 20px; height: 20px; }
+
+/* Chat panel */
+.sc-panel {
+  position: fixed; right: 20px; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 2147483001;
+  width: 380px; max-width: calc(100vw - 32px); height: min(640px, calc(100dvh - 40px));
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--sc-surface); border: 1px solid var(--sc-line); border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .28);
+}
+.sc-panel[hidden], .sc-launcher[hidden] { display: none !important; }
+.sc-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--sc-accent); color: var(--sc-on-accent); }
+.sc-avatar { width: 36px; height: 36px; flex: none; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, .2); font-weight: 700; }
+.sc-title { flex: 1; min-width: 0; }
+.sc-title strong { display: block; font-size: 16px; }
+.sc-title span { display: block; font-size: 12px; opacity: .9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-demo { background: var(--sc-gold-soft); color: var(--sc-ink); border: 1px solid var(--sc-gold); border-radius: 999px; padding: 2px 9px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.sc-icon-btn { background: rgba(255, 255, 255, .18); border: 1px solid rgba(255, 255, 255, .4); border-radius: 8px; padding: 5px 9px; cursor: pointer; font-size: 13px; color: inherit; }
+
+.sc-msgs { flex: 1; min-height: 0; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; background: var(--sc-surface); }
+.sc-msg { max-width: 86%; padding: 9px 12px; border-radius: 14px; overflow-wrap: anywhere; }
+.sc-msg p { margin: 0 0 6px; } .sc-msg p:last-child { margin: 0; }
+.sc-msg ul, .sc-msg ol { margin: 4px 0; padding-left: 20px; }
+.sc-bot { align-self: flex-start; background: var(--sc-bg); border: 1px solid var(--sc-line); border-top-left-radius: 4px; }
+.sc-you { align-self: flex-end; background: var(--sc-user-bg); color: var(--sc-user-fg); border-top-right-radius: 4px; white-space: pre-wrap; }
+.sc-error { border-left: 4px solid var(--sc-bad); }
+.sc-card { border-left: 4px solid var(--sc-good); }
+.sc-card h4 { margin: 0 0 6px; font-size: 15px; }
+.sc-card .sc-card-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+
+.sc-typing { display: flex; gap: 4px; padding: 12px 14px; }
+.sc-typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--sc-muted); animation: sc-bounce 1s infinite; }
+.sc-typing i:nth-child(2) { animation-delay: .15s; } .sc-typing i:nth-child(3) { animation-delay: .3s; }
+@keyframes sc-bounce { 0%, 60%, 100% { opacity: .3; transform: none; } 30% { opacity: 1; transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) { .sc-typing i { animation: none; opacity: .6; } }
+
+.sc-chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 14px 10px; max-height: 140px; overflow-y: auto; }
+.sc-chips:empty { display: none; }
+.sc-chip { background: var(--sc-surface); border: 1.5px solid var(--sc-accent); color: var(--sc-accent); border-radius: 999px; padding: 6px 12px; cursor: pointer; font-size: 14px; font-weight: 500; }
+.sc-chip:hover { background: var(--sc-accent-soft); }
+.sc-chip.sc-alt { border-color: var(--sc-line); color: var(--sc-muted); }
+
+.sc-form { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--sc-line); background: var(--sc-surface); }
+.sc-form input { flex: 1; min-width: 0; border: 1px solid var(--sc-line); background: var(--sc-bg); color: var(--sc-ink); border-radius: 10px; padding: 10px 12px; font: inherit; }
+.sc-form button { border: 0; border-radius: 10px; padding: 0 16px; background: var(--sc-accent); color: var(--sc-on-accent); font-weight: 600; cursor: pointer; }
+.sc-form button:disabled { opacity: .6; cursor: default; }
+.sc-foot { font-size: 11px; color: var(--sc-muted); text-align: center; padding: 0 12px 8px; background: var(--sc-surface); }
+
+/* Phones: the panel fills the screen */
+@media (max-width: 480px) {
+  .sc-panel { right: 0; bottom: 0; width: 100vw; max-width: 100vw; height: 100dvh; border-radius: 0; border: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .sc-launcher { right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+}

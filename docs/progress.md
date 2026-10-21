@@ -28,3 +28,29 @@
 - Flash-Lite is a smaller model. It follows the rules well in these tests, but may slip on unusual wording.
 - The free-tier daily quota limits how often the live test can be run (about one full run plus reruns a day is safe).
 - The 40 questions are judged by hand; there is no automatic scoring.
+
+## Stage B: Chat window (21 Oct 2026)
+
+**Built**
+- `widget/chat.js` and `widget/chat.css`: plain JavaScript and CSS, no libraries, added with one script tag.
+  Launcher button, header with Demo label, bubbles, typing dots, quick-reply buttons, light and dark theme,
+  full-screen on phones. All classes start with `sc-` so the school website's styles don't clash.
+- Opening flow: greeting, campus choice, group choice (exploring admissions / current parent or student /
+  business or vendor), then the group's menu. Vendor choice asks the bot (which answers from contacts.md).
+- `session_id`, campus, group and the visible conversation are kept in sessionStorage (a page reload keeps the chat).
+- Backend: `/widget/*` files, `/demo` test page, `/config` (school name, campuses, menus from `kb/school.json`, demo flag).
+  The group is sent with each message so the bot knows who it is talking to.
+
+**Tested**
+- Headless Chromium (Playwright) with the FakeLLM: opening flow, a typed question and reply, Demo label,
+  reload keeps the chat, no horizontal scroll at 400px (open and closed), dark theme colours, vendor choice.
+  Screenshots in `docs/screenshots/`.
+- pytest: `/config`, `/demo` and widget files served.
+
+**What failed and how it was fixed**
+- The header was cramped on desktop (title wrapped). "Restart" became an icon button with an accessible label.
+
+**Still weak**
+- Bot replies are shown as plain text with simple lists and bold; links and emails are not clickable.
+- Only tested in Chromium; not yet in Safari or Firefox, or on a real phone.
+- The campus list only shows campuses that have a kb/ folder (now just Campus A).

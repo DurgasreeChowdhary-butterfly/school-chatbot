@@ -1,12 +1,15 @@
 """School chatbot backend. Start with: uvicorn backend.app.main:app --reload"""
+import json
 import logging
 
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import config, sessions
 from .chat_service import FALLBACK_REPLY, handle_message
-from .knowledge import load_all_campuses
+from .knowledge import KB_DIR, load_all_campuses
 from .llm.base import LLMProvider
 from .llm.factory import get_provider
 
@@ -36,6 +39,13 @@ def set_provider(p: LLMProvider) -> None:
 
 app = FastAPI(title="School Chatbot")
 
+# The chat window files (chat.js, chat.css) and a test page that embeds them.
+WIDGET_DIR = KB_DIR.parent / "widget"
+app.mount("/widget", StaticFiles(directory=WIDGET_DIR), name="widget")
+
+# School name, campuses and menus for the chat window (from kb/school.json).
+SCHOOL = json.loads((KB_DIR / "school.json").read_text(encoding="utf-8"))
+
 
 class ChatRequest(BaseModel):
     session_id: str = Field(min_length=1, max_length=100)
@@ -53,6 +63,25 @@ class ChatResponse(BaseModel):
 def health():
     """Quick check that the server is running."""
     return {"status": "ok", "demo": config.DEMO_MODE}
+
+
+@app.get("/demo", include_in_schema=False)
+def demo_page():
+    """A pretend school web page with the chat window, for testing."""
+    return FileResponse(WIDGET_DIR / "demo.html")
+
+
+@app.get("/config")
+def widget_config():
+    """What the chat window needs to show its opening flow."""
+    campuses = [c for c in SCHOOL["campuses"] if c["id"] in KNOWLEDGE]
+    return {
+        "demo": config.DEMO_MODE,
+        "school_name": SCHOOL["school_name"],
+        "assistant_name": SCHOOL["assistant_name"],
+        "campuses": campuses,
+        "menus": SCHOOL["menus"],
+    }
 
 
 @app.post("/chat", response_model=ChatResponse)

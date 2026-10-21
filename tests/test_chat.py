@@ -12,6 +12,16 @@ def test_health(client):
     assert client.get("/health").json() == {"status": "ok", "demo": True}
 
 
+def test_widget_config_and_files(client):
+    cfg = client.get("/config").json()
+    assert cfg["demo"] is True
+    assert cfg["campuses"] == [{"id": "pilot-campus", "name": "Campus A"}]
+    assert "Fees" in cfg["menus"]["prospective"]
+    assert client.get("/widget/chat.js").status_code == 200
+    assert client.get("/widget/chat.css").status_code == 200
+    assert '<script src="/widget/chat.js"' in client.get("/demo").text
+
+
 def test_chat_returns_reply_and_demo_flag(client, fake):
     fake.add(LLMResult(text="Grade 1 needs 6 years as on 31 May."))
     assert chat(client, "Minimum age for Grade 1?") == {
