@@ -35,7 +35,12 @@ Use AI and automation to make school services easier to access:
 - Add a short note to docs/decisions.md for every important choice.
 
 ## Proposed stack (confirm in docs/decisions.md)
-Python 3.11+, FastAPI backend, SQLite for the pilot, plain JavaScript chat widget (one script tag), Claude API for answers with the approved content supplied in the prompt.
+Python 3.11+, FastAPI backend, SQLite for the pilot, plain JavaScript chat widget (one script tag), an AI model for answers with the approved content supplied in the prompt.
+
+## AI provider (swappable)
+- Development uses Google Gemini free tier (google-genai SDK), with DUMMY data only.
+- Real parent or child data must NOT go through the Gemini free tier. Switch to a paid provider/tier before real use.
+- All AI calls go through backend/app/llm/ (base.py interface, factory.py picks LLM_PROVIDER from .env). Only the provider files may import a provider SDK. Anthropic Claude is a stub, ready to fill in.
 
 ## Demo data mode (current)
 - The school team is on leave, so all content in kb/ is DUMMY (fictional school, fake numbers, example.com emails).
