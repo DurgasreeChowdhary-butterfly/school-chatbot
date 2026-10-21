@@ -4,6 +4,7 @@ Usage (server must be running, with the live model):
     python scripts/run_test_questions.py                 # all questions
     python scripts/run_test_questions.py --only 5 6 17   # some questions
     python scripts/run_test_questions.py --out docs/test-runs/round2.json
+    python scripts/run_test_questions.py --file docs/test-questions-extra.csv --out docs/test-runs/extra.json
 
 Each question gets a new session. Calls are spaced out for free-tier rate limits,
 and a fallback ("I'm having trouble") reply is retried with backoff.
@@ -30,7 +31,10 @@ def ask(base_url: str, question: str) -> str:
                 json={"session_id": f"quality-{uuid.uuid4().hex[:12]}", "message": question},
                 timeout=120,
             )
-            reply = r.json().get("reply", f"HTTP {r.status_code}")
+            body = r.json()
+            reply = body.get("reply", f"HTTP {r.status_code}")
+            if body.get("action"):
+                reply += f" [chat window shows: {body['action']}]"
         except Exception as e:
             reply = f"{FALLBACK} (client error: {e})"
         if FALLBACK not in reply or attempt == len(BACKOFF):
@@ -46,9 +50,10 @@ def main() -> None:
     parser.add_argument("--only", nargs="*", type=int, help="question ids to run")
     parser.add_argument("--gap", type=float, default=6, help="seconds between questions")
     parser.add_argument("--out", default="docs/test-runs/latest.json")
+    parser.add_argument("--file", default="docs/test-questions.csv", help="questions CSV")
     args = parser.parse_args()
 
-    with open(ROOT / "docs" / "test-questions.csv", encoding="utf-8") as f:
+    with open(ROOT / args.file, encoding="utf-8") as f:
         rows = [r for r in csv.DictReader(f) if not args.only or int(r["id"]) in args.only]
 
     out = ROOT / args.out

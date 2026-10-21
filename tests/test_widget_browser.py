@@ -122,6 +122,33 @@ def test_dark_theme(server, browser):
     context.close()
 
 
+def test_consent_card(server, browser):
+    import json
+    page = browser.new_page(viewport={"width": 400, "height": 820}, is_mobile=True)
+    walk_opening_flow(page, server)
+
+    # The next /chat reply asks for consent (as the real backend does when the AI calls request_consent).
+    def consent_reply(route):
+        route.fulfill(status=200, content_type="application/json", body=json.dumps({
+            "reply": "Before I take your details, please read the privacy notice below and tap I agree.",
+            "demo": True, "action": "consent",
+            "notice": "- We collect only what is needed.\n- Only the school staff who handle it can see them."}))
+    page.route("**/chat", consent_reply, times=1)
+    page.get_by_role("button", name="Book a campus visit").click()
+    page.get_by_role("heading", name="Privacy notice").wait_for()
+    assert no_horizontal_scroll(page)
+    page.screenshot(path=SHOTS / "6-consent-card-phone.png")
+
+    consent_calls = []
+    page.on("request", lambda r: consent_calls.append(r.post_data) if r.url.endswith("/consent") else None)
+    page.get_by_role("button", name="I agree").click()
+    page.locator(".sc-msg.sc-you", has_text="I agree to the privacy notice").wait_for()
+    page.get_by_text("scripted test reply").last.wait_for()
+    assert consent_calls and '"agree": true' in consent_calls[0].replace('":true', '": true')
+    assert page.locator(".sc-consent .sc-card-actions").count() == 0  # buttons removed after answering
+    page.close()
+
+
 def test_staff_page_login_and_status_change(server, browser):
     from backend.app import db
     from backend.app.notify import notify

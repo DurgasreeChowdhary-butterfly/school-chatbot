@@ -1,7 +1,9 @@
 # School Chatbot
-Website chat assistant for school enquiries and parent support. See CLAUDE.md for context and docs/ for scope, decisions and risks.
+Website chat assistant for school enquiries and parent support. See CLAUDE.md for context and docs/ for scope,
+decisions (docs/decisions.md), progress and known weaknesses (docs/progress.md) and risks.
 
-Folders: backend/ (server), widget/ (chat window for the website), kb/ (approved school content, one folder per campus), docs/, scripts/, tests/.
+Folders: backend/ (server), widget/ (chat window for the website), kb/ (approved school content, one folder per campus),
+docs/, scripts/ (live test helpers), tests/ (automated tests).
 
 > All content in kb/ is DUMMY data for a fictional school. Never send real parent or child data through the Gemini free tier.
 
@@ -10,7 +12,8 @@ Folders: backend/ (server), widget/ (chat window for the website), kb/ (approved
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements-dev.txt
-Copy-Item .env.example .env   # then fill in GEMINI_API_KEY and MODEL_NAME
+python -m playwright install chromium      # only needed for the browser tests
+Copy-Item .env.example .env                # then fill in GEMINI_API_KEY, MODEL_NAME and ADMIN_PASSWORD
 ```
 
 ## Run
@@ -18,38 +21,65 @@ Copy-Item .env.example .env   # then fill in GEMINI_API_KEY and MODEL_NAME
 .\.venv\Scripts\Activate.ps1
 uvicorn backend.app.main:app --reload
 ```
-- Health check: http://127.0.0.1:8000/health
-- Ask a question:
-  ```powershell
-  $body = @{ session_id = "test-1"; message = "What is the minimum age for Grade 1?" } | ConvertTo-Json
-  Invoke-RestMethod -Uri http://127.0.0.1:8000/chat -Method Post -ContentType "application/json" -Body $body
-  ```
+| Address | What it is |
+|---|---|
+| http://127.0.0.1:8000/demo | Test page with the chat window |
+| http://127.0.0.1:8000/staff | Staff page (password = `ADMIN_PASSWORD` in .env) |
+| http://127.0.0.1:8000/health | Health check |
+| http://127.0.0.1:8000/docs | Automatic API documentation |
 
-## Chat window
-- Test page: http://127.0.0.1:8000/demo
-- To add it to any website, put one line before `</body>`:
-  `<script src="https://YOUR-SERVER/widget/chat.js" defer></script>`
-  Optional: `data-campus="pilot-campus"` (skip the campus question), `data-open="true"`, `data-theme="light"` or `"dark"`.
-- School name, campuses and menu buttons come from `kb/school.json`.
+Ask a question from PowerShell (session ids must be 16 to 100 letters, digits, `-` or `_`):
+```powershell
+$body = @{ session_id = "test-session-0001"; message = "What is the minimum age for Grade 1?" } | ConvertTo-Json
+Invoke-RestMethod -Uri http://127.0.0.1:8000/chat -Method Post -ContentType "application/json" -Body $body
+```
 
-## Enquiries, reminders and notifications
-- The bot collects enquiry details, shows a summary and saves only after the visitor says yes. Saved in `data/chatbot.db` (SQLite).
-- Routing (counsellor, who handles which concern, reminder deadlines, class list) is in `kb/<campus>/routing.json`.
-- Notifications go to the `outbox` table and the server log. Real email is sent only if `SMTP_HOST`, `SMTP_USER`
-  and `SMTP_PASSWORD` are set in `.env` (optional: `SMTP_PORT`, default 587, and `SMTP_FROM`).
-- The reminder job runs every 15 minutes while the server is running.
-- To try a multi-turn conversation with the live model: `python scripts/live_conversation.py "first message" "second message"`
+## Chat window on a website
+Put one line before `</body>` on the school website:
+```html
+<script src="https://YOUR-SERVER/widget/chat.js" defer></script>
+```
+Optional attributes: `data-campus="pilot-campus"` (skip the campus question), `data-open="true"`, `data-theme="light"` or `"dark"`.
+Add the website's address to `ALLOWED_ORIGINS` in .env (for example `https://www.school.example`), or the browser will block the chat.
+School name, campuses and menu buttons come from `kb/school.json`.
 
-## Staff page
-- Set `ADMIN_PASSWORD` in `.env` (a long password), restart the server, open http://127.0.0.1:8000/staff
-- See enquiries, tickets, callback requests and the outbox; change statuses; export CSV; run reminders by hand.
+## What the bot can do
+- Answer from the approved content in `kb/<campus>/*.md` only (rules in `backend/app/prompts.py`).
+- Admission enquiries and visit requests: privacy notice and "I agree" first, then details, a summary, and saving only
+  after the visitor says yes. Duplicates by mobile number get a note instead of a new enquiry.
+- Concerns: tickets routed by category, urgent handling for safety, status lookup with reference + registered mobile.
+- "Talk to a person": callback requests for the front office.
+- Notifications go to the `outbox` table and the server log; real email only if `SMTP_*` is set in .env.
+- A reminder job (every 15 minutes) reminds and escalates enquiries and tickets after the working-day deadlines in
+  `kb/<campus>/routing.json`.
 
 ## Test
-- Automated tests (use a FakeLLM, no API calls, free): `python -m pytest`
-  The browser tests need Chromium once: `python -m playwright install chromium`. Screenshots go to docs/screenshots/.
-- Answer-quality test (uses the live model and your free-tier quota): start the server, then
+- **Automated tests** (FakeLLM, no API calls, free, about 15 seconds): `python -m pytest`
+  The browser tests save screenshots to `docs/screenshots/`.
+- **Answer-quality test** (live model, uses your free-tier quota). Start the server, then:
   ```powershell
   python scripts/run_test_questions.py --out docs/test-runs/latest.json
+  python scripts/run_test_questions.py --file docs/test-questions-extra.csv --out docs/test-runs/extra.json
   python scripts/show_results.py docs/test-runs/latest.json
   ```
-  Judge each answer against the "expected" column and update docs/test-report.md.
+  Judge each answer against the "expected" column and update `docs/test-report.md`.
+- **A multi-turn conversation** with the live model (taps "I agree" for you):
+  `python scripts/live_conversation.py "I want to book a visit" "Sample Parent, Sample Kid, Grade 3" "9876543210"`
+
+## Switch the AI provider
+All AI calls go through `backend/app/llm/`. Only files in that folder may import a provider SDK.
+- `LLM_PROVIDER=gemini` uses `gemini_provider.py` (needs `GEMINI_API_KEY` and `MODEL_NAME`).
+- `LLM_PROVIDER=fake` uses the scripted FakeLLM (for tests and offline demos).
+- To use Claude: fill in `generate()` in `llm/anthropic_provider.py` (convert the neutral `Message`, `ToolSpec` and
+  `ToolCall` to the Anthropic Messages API and back), add `anthropic` to requirements.txt, then set
+  `LLM_PROVIDER=anthropic`, `ANTHROPIC_API_KEY` and `MODEL_NAME`. Run `python -m pytest` and the answer-quality test.
+- Before any real parent or child data is used, move to a paid tier or provider whose terms fit the school's privacy rules.
+
+## Replace the dummy content with the school's real content
+1. For each campus, replace the files in `kb/<campus>/` with the school-approved versions. Keep the file names and headings.
+   `privacy_notice.md` must be the school's approved notice.
+2. Update `kb/<campus>/routing.json` to match `escalation.md` and `contacts.md` (real role emails, classes, deadlines).
+   The test `test_routing_file_matches_escalation_md` checks the categories agree.
+3. Update `kb/school.json` (school name, campuses, menu buttons). A new campus needs its own `kb/<campus-id>/` folder.
+4. Set `DEMO_MODE=false` in .env only when everything in kb/ is real and approved.
+5. Restart the server, run `python -m pytest`, then the answer-quality test, and update `docs/test-report.md`.

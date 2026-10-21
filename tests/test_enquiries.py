@@ -76,6 +76,23 @@ def test_cannot_confirm_in_the_same_turn_as_submit(client, fake):
     assert db.list_rows("enquiries") == []
 
 
+def test_resubmitting_the_same_details_then_confirming_works(client, fake):
+    """Seen live: on "yes" the AI checked the same details again, then confirmed in one turn."""
+    tool_turn(client, fake, "details", ("submit_enquiry", DETAILS))
+    checked, saved = tool_turn(client, fake, "yes", ("submit_enquiry", DETAILS), ("confirm_enquiry", {}))
+    assert saved["status"] == "saved"
+
+
+def test_changed_details_need_a_new_confirmation(client, fake):
+    tool_turn(client, fake, "details", ("submit_enquiry", DETAILS))
+    changed = {**DETAILS, "class_applying": "Grade 4"}
+    _, saved = tool_turn(client, fake, "make it grade 4 and save", ("submit_enquiry", changed), ("confirm_enquiry", {}))
+    assert "not confirmed yet" in saved["error"]
+    [saved] = tool_turn(client, fake, "yes", ("confirm_enquiry", {}))
+    assert saved["status"] == "saved"
+    assert db.list_rows("enquiries")[0]["class_applying"] == "Grade 4"
+
+
 def test_cannot_confirm_without_submit(client, fake):
     [result] = tool_turn(client, fake, "yes", ("confirm_enquiry", {}))
     assert "submit_enquiry first" in result["error"]

@@ -84,7 +84,7 @@ def create_ticket(args: dict, ctx) -> dict:
     row = db.insert("tickets", {
         "campus": campus, "category": category["name"], "description": description, "parent_name": name,
         "mobile": mobile, "urgent": int(urgent), "first_contact": category["first"],
-        "backup_contact": category["backup"],
+        "backup_contact": category["backup"], "consent_at": ctx.session.consent_at,
     })
     body = (f"Ticket {row['ref']}{' URGENT' if urgent else ''}\nCategory: {row['category']}\n"
             f"Concern: {description}\nParent: {name}\nMobile: {mobile}")
@@ -156,7 +156,7 @@ def request_callback(args: dict, ctx) -> dict:
 
     front = routing.front_office(campus)
     row = db.insert("callbacks", {"campus": campus, "name": name, "mobile": mobile, "reason": reason,
-                                  "assigned_to": front["role"]})
+                                  "assigned_to": front["role"], "consent_at": ctx.session.consent_at})
     notify(campus, front, f"Callback request {row['ref']}",
            f"Callback {row['ref']}\nName: {name}\nMobile: {mobile}\nAbout: {reason or '-'}", row["ref"], "callback")
     log.info("Callback %s requested for %s", row["ref"], mask_mobile(mobile))

@@ -22,3 +22,8 @@
 | 21 Oct 2026 | Urgent (safety) tickets notify first contact, backup and front office immediately | Claude (agent) | CLAUDE.md: safety goes straight to a human |
 | 21 Oct 2026 | Tickets are created without a separate confirmation step (unlike enquiries) | Claude (agent) | The parent explicitly asks to log it; keeps urgent cases fast |
 | 21 Oct 2026 | Staff page: one shared ADMIN_PASSWORD, in-memory login tokens (8 h), 5 failed logins per IP per 15 min | Claude (agent) | Simple for the pilot; per-person accounts later if needed |
+| 21 Oct 2026 | Consent: request_consent tool + "I agree" card in the chat window; backend refuses to store enquiries, tickets or callbacks without it; consent time saved on each record | Claude (agent) | Ticket status lookup needs no consent (nothing is stored). Privacy notice text is in kb/<campus>/privacy_notice.md (dummy) |
+| 21 Oct 2026 | Rate limits: 12 chat messages per minute per session, 40 per IP (settable in .env) | Claude (agent) | In memory; uses the direct client IP (see weaknesses if behind a proxy) |
+| 21 Oct 2026 | Session ids must be 16-100 characters (letters, digits, - and _) | Claude (agent) | Makes another person's chat session impossible to guess |
+| 21 Oct 2026 | Phone numbers are masked in every log line by a logging filter; message text is never logged | Claude (agent) | CLAUDE.md privacy rules |
+| 21 Oct 2026 | CORS: only websites in ALLOWED_ORIGINS; empty = same server only | Claude (agent) | Add the school website before embedding |

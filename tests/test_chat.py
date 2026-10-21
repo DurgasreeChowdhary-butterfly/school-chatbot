@@ -2,7 +2,7 @@
 import re
 from pathlib import Path
 
-from backend.app import config
+from backend.app import config, main
 from backend.app.chat_service import FALLBACK_REPLY
 from backend.app.llm.base import LLMResult, Message, ToolCall
 from tests.conftest import chat
@@ -27,6 +27,8 @@ def test_chat_returns_reply_and_demo_flag(client, fake):
     assert chat(client, "Minimum age for Grade 1?") == {
         "reply": "Grade 1 needs 6 years as on 31 May.",
         "demo": True,
+        "action": None,
+        "notice": None,
     }
 
 
@@ -39,7 +41,8 @@ def test_prompt_contains_rules_knowledge_and_group(client, fake):
     assert "current parent or student" in prompt
 
 
-def test_history_is_kept_per_session_and_capped(client, fake):
+def test_history_is_kept_per_session_and_capped(client, fake, monkeypatch):
+    monkeypatch.setattr(main.session_limiter, "limit", 1000)  # this test sends many messages quickly
     turns = config.HISTORY_LIMIT // 2 + 3  # more turns than the memory holds
     for i in range(turns):
         chat(client, f"message {i}", session_id="a")

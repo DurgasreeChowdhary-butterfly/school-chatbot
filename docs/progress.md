@@ -145,3 +145,58 @@
 - One shared staff password; no per-person accounts or audit of who changed what.
 - Logins are kept in memory: everyone is logged out when the server restarts.
 - The login rate limit is per IP; staff behind one office network share the limit.
+
+## Stage F: Hardening (21 Oct 2026)
+
+**Built**
+- Privacy notice (`kb/pilot-campus/privacy_notice.md`, dummy) and consent: the AI calls `request_consent` before asking
+  for details; the chat window shows the notice with "I agree" / "No thanks"; `POST /consent` records it.
+  The backend refuses to store enquiries, tickets or callbacks without consent, and saves the consent time on each record.
+- Rate limits on `/chat` and `/consent`: 12 per minute per session, 40 per minute per IP (settable in .env).
+- Input limits: messages 1 to 1000 characters (friendly replies for empty or too long), session ids 16 to 100 safe
+  characters, campus ids checked. Bad requests never return a stack trace.
+- Phone numbers masked in every log line (logging filter); message text is never logged.
+- CORS: only websites listed in `ALLOWED_ORIGINS`.
+- Fix found in the live run: if the AI re-checks the same enquiry details when the person says "yes", the confirmation
+  now works (changed details still need a new "yes").
+- Rules: consent only when about to collect details; information first for concerns and "talk to a person";
+  never fill in missing details; invalid numbers rejected anywhere; "next" dates worked out from today.
+- README: run, test, switch provider, replace dummy content.
+
+**Tested**
+- pytest (79 tests, about 15 seconds, no API calls): consent shown, nothing saved without consent, consent unlocks and is
+  recorded, "No thanks" withdraws, lookups need no consent, empty and very long messages, bad session/campus ids,
+  per-session and per-IP rate limits, phone masking (text, log handler, full save flow), CORS allow/deny,
+  prompt injection (rules unchanged by user text, tricked model can't read another ticket or skip confirmation,
+  nasty tool arguments rejected), provider failing mid-tool and provider not creatable, resubmit-then-confirm.
+- Browser: consent card on a phone (screenshot 6), "I agree" calls `/consent` and continues the chat.
+- Live: all 40 questions + 10 extra cases, then a rerun of the affected and must-pass questions, and a full
+  enquiry conversation through consent (saved E-1001). See `docs/test-report.md`.
+
+**What failed and how it was fixed**
+- First final live run: the bot asked for consent instead of answering (25, 39, 108), accepted an invalid number (20),
+  didn't work out the next PTM (21), asked for details before consent (31, 109), made up a visit time, and an enquiry
+  could not be confirmed because the AI re-submitted on "yes". Fixed with clearer rules and the backend fix above;
+  rerun passed.
+- Two older tests needed updating (new reply fields; a test that now hits the session rate limit).
+
+## Known weaknesses (overall)
+1. **Model quality and quota.** Development uses `gemini-3.5-flash-lite` on the free tier. It is a small model; the rules
+   needed several rounds, and answers can vary from run to run. The bigger models failed (timeouts) or had a
+   20-requests-per-day free quota. A paid tier is needed before real use, and real parent or child data must never
+   go through the free tier.
+2. **Rule-following is not guaranteed.** Privacy, confirmation, consent and ticket lookups are enforced in code, but
+   wording (no promises, no comparisons, safety advice) relies on the model following `prompts.py`.
+   Re-run the answer-quality test after every change to rules, model or content.
+3. **Everything in memory resets on restart:** chat sessions, pending enquiries, consent, staff logins and rate limits.
+   Saved enquiries, tickets, callbacks and the outbox are safe in SQLite.
+4. **One server only.** In-memory sessions and rate limits do not work across several server processes. Behind a proxy
+   the per-IP limit sees the proxy's address unless the proxy setup is changed.
+5. **Working days ignore school holidays**, and reminders only run while the server is running.
+6. **One shared staff password**, no per-person accounts or record of who changed what.
+7. **No real email yet**: notifications are only in the outbox and log until SMTP settings are added.
+8. **Duplicate enquiries are matched by mobile only.**
+9. **The AI chooses the ticket category**; a wrong choice routes to the wrong person until staff notice.
+10. **Answers are judged by hand**; there is no automatic scoring of the 40 questions.
+11. **Browser support** was tested only in headless Chromium (desktop and phone size), not Safari/Firefox or a real phone.
+12. **No HTTPS or hosting set-up yet**; the staff cookie is marked Secure only when served over HTTPS.

@@ -77,7 +77,13 @@ def submit_enquiry(args: dict, ctx) -> dict:
         "parent_name": parent, "child_name": child, "class_applying": cls, "mobile": mobile,
         "previous_school": previous, "reason": reason, "visit_preference": visit,
     }
-    ctx.session.pending_enquiry = {"details": details, "turn": ctx.session.turn}
+    pending = ctx.session.pending_enquiry
+    if pending and pending["details"] == details:
+        # Same details as the summary the person already saw: keep the original turn,
+        # so their "yes" can be confirmed even if the AI checks the details once more.
+        pass
+    else:
+        ctx.session.pending_enquiry = {"details": details, "turn": ctx.session.turn}
     return {
         "status": "needs_confirmation",
         "summary": details,
@@ -115,7 +121,8 @@ def confirm_enquiry(args: dict, ctx) -> dict:
                        "instead of creating a new one. Tell the person the reference.",
         }
 
-    row = db.insert("enquiries", {**d, "campus": campus, "assigned_to": counsellor["role"]})
+    row = db.insert("enquiries", {**d, "campus": campus, "assigned_to": counsellor["role"],
+                                  "consent_at": ctx.session.consent_at})
     notify(campus, counsellor, f"New enquiry {row['ref']}: {d['class_applying']}",
            _enquiry_body(row), row["ref"], "enquiry")
     log.info("Enquiry %s saved for %s", row["ref"], mask_mobile(d["mobile"]))

@@ -214,8 +214,40 @@
       .catch(function () { add("bot", FALLBACK, { error: true }); afterReply(); })
       .then(function () { setBusy(false); });
   }
-  // Extra steps the backend can ask for (added in later stages, e.g. a consent card).
-  var actions = {};
+  // Extra steps the backend can ask for.
+  var actions = {
+    // Privacy notice with "I agree" / "No thanks", shown before any personal details are collected.
+    consent: function (body) {
+      var card = document.createElement("div");
+      card.className = "sc-msg sc-bot sc-card sc-consent";
+      card.innerHTML = "<h4>Privacy notice</h4>" + format(body.notice || "We use your details only to answer your request.") +
+        '<div class="sc-card-actions"></div>';
+      var row = card.querySelector(".sc-card-actions");
+      [{ label: "I agree", agree: true }, { label: "No thanks", agree: false, alt: true }].forEach(function (choice) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "sc-chip" + (choice.alt ? " sc-alt" : "");
+        b.textContent = choice.label;
+        b.onclick = function () { answerConsent(choice.agree, card); };
+        row.appendChild(b);
+      });
+      msgs.appendChild(card);
+      scrollDown();
+      setChips([{ label: "Menu", onClick: showMenu, alt: true }]);
+    }
+  };
+  function answerConsent(agree, card) {
+    if (busy) return;
+    card.querySelector(".sc-card-actions").remove();
+    fetch(API + "/consent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_id: state.sessionId, agree: agree })
+    })
+      .then(function (r) { if (!r.ok) throw new Error("consent failed"); })
+      .then(function () { send(agree ? "I agree to the privacy notice." : "No thanks, I don't want to share my details."); })
+      .catch(function () { add("bot", FALLBACK, { error: true }); afterReply(); });
+  }
 
   function setBusy(on) {
     busy = on;

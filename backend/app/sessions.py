@@ -19,6 +19,7 @@ class Session:
     # Enquiry details checked by submit_enquiry, waiting for the visitor to confirm: {"details", "turn"}.
     pending_enquiry: dict | None = None
     failed_lookups: int = 0  # wrong ticket reference/mobile pairs in this session
+    consent_at: str | None = None  # when the visitor tapped "I agree" on the privacy notice
 
 
 _sessions: dict[str, Session] = {}
