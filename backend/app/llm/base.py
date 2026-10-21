@@ -2,13 +2,7 @@
 so the provider (Gemini, Claude, ...) can be swapped without changing other code."""
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-
-
-@dataclass
-class Message:
-    """One chat message. role is "user" or "assistant"."""
-    role: str
-    content: str
+from typing import Any
 
 
 @dataclass
@@ -29,6 +23,22 @@ class ToolCall:
 
 
 @dataclass
+class Message:
+    """One message in the conversation.
+    role is "user", "assistant" or "tool".
+    - assistant messages may carry tool_calls (the AI asked us to run tools)
+    - tool messages carry the result of one tool call (tool_call_id and name say which)
+    provider_data is an opaque value a provider may attach and read back later
+    (for example Gemini's raw reply, which must be sent back unchanged). Other code ignores it."""
+    role: str
+    content: str = ""
+    tool_calls: list[ToolCall] = field(default_factory=list)
+    tool_call_id: str | None = None
+    name: str | None = None
+    provider_data: Any = None
+
+
+@dataclass
 class LLMResult:
     """What every provider returns. failed=True means the provider errored,
     timed out, was rate limited or blocked the answer; error says why (for logs only)."""
@@ -36,6 +46,7 @@ class LLMResult:
     tool_calls: list[ToolCall] = field(default_factory=list)
     failed: bool = False
     error: str | None = None
+    provider_data: Any = None
 
 
 class LLMProvider(ABC):

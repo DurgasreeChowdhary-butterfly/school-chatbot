@@ -10,3 +10,6 @@
 | 21 Oct 2026 | AI provider for development: Google Gemini free tier (google-genai SDK, generate_content), dummy data only | [you] | Real parent or child data must NOT go through the free tier. Suggested model: gemini-3.8-flash |
 | 21 Oct 2026 | Swappable provider layer in backend/app/llm/ (neutral interface, LLM_PROVIDER in .env) | [you] | Anthropic Claude stub ready. Only provider files import an SDK |
 | 21 Oct 2026 | Chat memory: last 12 messages per session, in memory only | [you] | Lost on server restart; fine for the pilot |
+| 21 Oct 2026 | Model for development: gemini-3.5-flash-lite | Claude (agent) | gemini-3.8-flash timed out on every call; gemini-3.6-flash free tier is only 20 requests/day. Revisit with a paid tier |
+| 21 Oct 2026 | docs/school-chatbot-demo.html is the design reference | Claude (agent) | The brief named docs/demo-reference.html, which does not exist |
+| 21 Oct 2026 | Automated tests use a FakeLLM; the live model is used only for the answer-quality test | Claude (agent) | Tests are free, fast and repeatable |

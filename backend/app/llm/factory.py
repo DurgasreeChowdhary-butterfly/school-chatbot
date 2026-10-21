@@ -15,5 +15,8 @@ def get_provider() -> LLMProvider:
     if name == "anthropic":
         from .anthropic_provider import AnthropicProvider
         return AnthropicProvider(api_key=os.getenv("ANTHROPIC_API_KEY", "").strip(), model=model)
+    if name == "fake":
+        from .fake_provider import FakeLLM
+        return FakeLLM()
 
-    raise ValueError(f"Unknown LLM_PROVIDER '{name}' in .env. Use 'gemini' or 'anthropic'.")
+    raise ValueError(f"Unknown LLM_PROVIDER '{name}' in .env. Use 'gemini', 'anthropic' or 'fake'.")
