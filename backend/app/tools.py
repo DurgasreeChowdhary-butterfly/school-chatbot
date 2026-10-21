@@ -3,14 +3,14 @@ and a handler (what our code does). The backend always validates the AI's argume
 import logging
 from dataclasses import dataclass
 
-from . import enquiry_tools
+from . import enquiry_tools, ticket_tools
 from .llm.base import ToolCall, ToolSpec
 from .sessions import Session
 
 log = logging.getLogger("chatbot.tools")
 
 # Each module offers specs(campus) and a HANDLERS dict.
-TOOL_MODULES = [enquiry_tools]
+TOOL_MODULES = [enquiry_tools, ticket_tools]
 
 
 @dataclass

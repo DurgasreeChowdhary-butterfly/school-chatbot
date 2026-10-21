@@ -1,11 +1,9 @@
 """Enquiry capture: validation, confirmation, duplicates, routing, outbox and reminders (FakeLLM only)."""
-import json
 from datetime import datetime
 
 from backend.app import db, jobs, routing
-from backend.app.llm.base import LLMResult, ToolCall
 from backend.app.validation import clean_name, mask_mobile, normalize_mobile
-from tests.conftest import chat
+from tests.conftest import chat, tool_turn
 
 DETAILS = {
     "parent_name": "Sample Parent",
@@ -16,15 +14,6 @@ DETAILS = {
     "reason": "Moving house",
     "visit_preference": "Saturday morning",
 }
-
-
-def tool_turn(client, fake, message, *calls, reply="OK", session_id="s1"):
-    """One visitor message where the AI calls the given tools, then replies. Returns the tool results."""
-    fake.add(LLMResult(tool_calls=[ToolCall(name=n, arguments=a, id=f"c{i}") for i, (n, a) in enumerate(calls)]),
-             LLMResult(text=reply))
-    chat(client, message, session_id=session_id)
-    sent = fake.calls[-1]["messages"]
-    return [json.loads(m.content) for m in sent if m.role == "tool"][-len(calls):]
 
 
 def submit_and_confirm(client, fake, details=DETAILS, session_id="s1"):

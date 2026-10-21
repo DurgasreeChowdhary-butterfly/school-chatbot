@@ -1,4 +1,5 @@
 """Shared test setup. Tests always use the FakeLLM, never the live model."""
+import json
 import os
 
 # Set before the app is imported, so .env values (like the real provider) are not used.
@@ -9,6 +10,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from backend.app import db, main, sessions
+from backend.app.llm.base import LLMResult, ToolCall
 from backend.app.llm.fake_provider import FakeLLM
 
 
@@ -37,3 +39,13 @@ def chat(client, message, session_id="test-session", **extra):
     r = client.post("/chat", json={"session_id": session_id, "message": message, **extra})
     assert r.status_code == 200, r.text
     return r.json()
+
+
+def tool_turn(client, fake, message, *calls, reply="OK", session_id="s1"):
+    """One visitor message where the AI calls the given tools (name, args), then replies.
+    Returns the tool results the backend sent back to the AI."""
+    fake.add(LLMResult(tool_calls=[ToolCall(name=n, arguments=a, id=f"c{i}") for i, (n, a) in enumerate(calls)]),
+             LLMResult(text=reply))
+    chat(client, message, session_id=session_id)
+    sent = fake.calls[-1]["messages"]
+    return [json.loads(m.content) for m in sent if m.role == "tool"][-len(calls):]

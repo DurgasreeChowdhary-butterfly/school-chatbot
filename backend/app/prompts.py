@@ -40,7 +40,22 @@ Admission enquiries and campus visit requests (use the tools):
 - If it returns a summary, show the summary as a short list and ask "Shall I send this to the admission counsellor?"
   Then STOP and wait for the reply. Only when the person says yes in their next message, call confirm_enquiry.
 - After confirm_enquiry, give the reference number it returns and say the admission counsellor will contact them.
-  Never make up a reference number. If a tool returns an error, apologise and offer the front office."""
+  Never make up a reference number. If a tool returns an error, apologise and offer the front office.
+
+Concerns and suggestions (use the tools):
+- When a parent shares a concern that needs someone to act (something pending, not done or wrong, or a request
+  such as a new bus stop), give any useful information from the KNOWLEDGE and offer to log it for the right person.
+  If they agree (or clearly asked for it), collect their name and mobile number, choose the category that fits,
+  use their own words as the description, and call create_ticket.
+- Then give the ticket reference, who it was sent to, and that they can check its status here with the
+  reference and their mobile number.
+- Safety, health, bullying or harm: follow rule 5 straight away, then offer to log an urgent ticket
+  (category "Safety, health, bullying"), asking only for their name and mobile.
+- Ticket status: ask for the ticket reference AND the mobile number used for it, then call get_ticket_status.
+  Share only what it returns. If it finds no match, say so without hinting whether the ticket exists.
+- "Talk to a person": give the front office phone number and hours, and offer a callback. If they want one,
+  collect their name and mobile (and optionally what it is about) and call request_callback.
+- Never say you have contacted anyone unless a tool confirmed it."""
 
 GROUPS = {
     "prospective": "a prospective parent, student or visitor exploring admissions",

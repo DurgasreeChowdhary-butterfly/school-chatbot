@@ -18,3 +18,6 @@
 | 21 Oct 2026 | Routing, classes and deadlines live in kb/<campus>/routing.json (mirrors escalation.md and contacts.md) | Claude (agent) | Code reads it; nothing school-specific is hardcoded. Role emails not in contacts.md are example.com placeholders |
 | 21 Oct 2026 | Working days = Monday to Friday; holidays not counted yet | Claude (agent) | Simple and conservative. Add holidays from calendar.md later if needed |
 | 21 Oct 2026 | Notifications: outbox table + log always; email only if SMTP_HOST/USER/PASSWORD are set | Claude (agent) | No real email is sent during the demo |
+| 21 Oct 2026 | Ticket status needs reference + registered mobile; wrong number and unknown ticket get the same reply; 5 failed lookups per session locks lookups | Claude (agent) | Never reveal a ticket to a wrong number |
+| 21 Oct 2026 | Urgent (safety) tickets notify first contact, backup and front office immediately | Claude (agent) | CLAUDE.md: safety goes straight to a human |
+| 21 Oct 2026 | Tickets are created without a separate confirmation step (unlike enquiries) | Claude (agent) | The parent explicitly asks to log it; keeps urgent cases fast |

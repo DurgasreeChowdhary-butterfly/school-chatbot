@@ -87,3 +87,33 @@
 - School holidays are not counted as non-working days (only weekends).
 - Sessions are in memory: a pending (unconfirmed) enquiry is lost if the server restarts.
 - The duplicate check uses the mobile number only; two families sharing a phone would be merged into one enquiry with a note.
+
+## Stage D: Concern tickets (21 Oct 2026)
+
+**Built**
+- Tools in `ticket_tools.py`: `create_ticket` (category, description, parent name, mobile), `get_ticket_status`
+  (ticket reference + registered mobile) and `request_callback` (name, mobile, optional reason).
+- Categories, first contact, backup and the urgent flag come from `kb/pilot-campus/routing.json`.
+- Safety, health and bullying tickets are urgent: the principal, vice principal and front office are notified at once,
+  and the bot is told to send the person to the front office phone immediately.
+- Status lookup: a wrong mobile and a missing ticket get the exact same "no match" answer, so nothing leaks.
+  After 5 failed lookups in one chat, lookups are refused for that session.
+- Statuses: Received, In progress, Resolved. The reminder job reminds the first contact if a ticket is still
+  "Received" after 1 working day, and escalates to the backup if not resolved after 3 working days.
+- Rules in `prompts.py` for concerns, urgent cases, status lookups and callbacks.
+
+**Tested**
+- pytest (FakeLLM): routing.json matches escalation.md, routing by category, validation, urgent safety ticket
+  notifies 3 roles, lookup with right mobile (and after a status change), wrong-number lookup reveals nothing,
+  lockout after 5 failures (other sessions unaffected), callback saved and routed, invalid callback mobile,
+  acknowledge reminder then escalation to backup, no reminder once in progress, resolved tickets left alone. 43 tests pass.
+- Live with Gemini (two conversations): diary concern -> T-1001 to the class teacher; status with a wrong number -> no match;
+  right number -> "Received"; bullying -> contacts first, then urgent T-1002 with three notifications.
+
+**What failed and how it was fixed**
+- Nothing failed in this stage. The shared test helper moved to `tests/conftest.py`.
+
+**Still weak**
+- Ticket status changes do not notify the parent (no SMS/WhatsApp in scope).
+- The lockout is per chat session; someone could start new sessions to keep guessing (Stage F adds rate limits).
+- The bot decides the category; a wrong choice routes to the wrong person (staff can see it on the staff page).
