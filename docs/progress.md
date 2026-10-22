@@ -183,7 +183,33 @@
 ## Reliability round (22 Oct 2026)
 
 ### 1. Consistency
-_In progress: see docs/consistency-report.md when the three live runs are finished._
+**Built**
+- `LLM_TEMPERATURE` setting (empty = model default). Google's docs strongly recommend the default (1.0) for Gemini 3
+  models and say lower values may cause looping; Gemini 3.6+ ignores it. Kept at the default after measuring both.
+- Automatic answer checks: `docs/test-checks.json` + `scripts/grade_answers.py` (pass / fail with reasons / error);
+  `run_test_questions.py` prints them at the end; `scripts/consistency_report.py` makes the per-question table.
+- Q25 fix (rule): say what the person can get themselves (a duplicate receipt at the accounts office) first.
+- Q15 fix (rule + code): copy contact details exactly; garbled emails repaired; a made-up email or phone number gets one
+  corrected reply, otherwise it is replaced by the front office number.
+- The Gemini provider now says "(daily quota used up)" in its error, so scripts can tell quota from other failures.
+
+**Tested**
+- Live, 40 questions x 3 runs at the default temperature: 40, 39, 40 pass (Q15 flipped: garbled email).
+  After the fixes: 12 must-pass and flipped questions 12/12, Q15 3 more times 3/3.
+  40 x 3 at temperature 0.2 (with the fixes): 40, 40, 40. No looping. Details in `docs/consistency-report.md`.
+- All 240 answers were also read by hand; the automatic checks agreed.
+- pytest: 6 new tests for the email repair and contact check.
+
+**What failed and how it was fixed**
+- The first automatic Q15 check was too strict (failed "no teaching positions listed"); loosened.
+- First version of the contact check treated a made-up address as known after the retry, because it was quoted in the
+  check message; the known contacts are now taken before the retry (a test caught this).
+- Scripted file edits on Windows switched several files to CRLF line endings; restored to LF in a separate commit.
+
+**Still weak**
+- 3 runs of 40 single questions is small; rare slips (1 in 50) may not show. Multi-turn flows were not repeated here.
+- Answers vary in wording from run to run at either temperature; the facts did not.
+
 
 ### 2. Model comparison
 **Built**

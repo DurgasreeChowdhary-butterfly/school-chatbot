@@ -1,5 +1,12 @@
 # Answer-quality test report (docs/test-questions.csv)
 
+## Consistency round (22 Oct 2026)
+
+Each question 3 times at the default temperature and 3 times at 0.2, checked automatically and by hand.
+Default: 39 of 40 questions passed all 3 runs (Q15 flipped: garbled email; fixed). Temperature 0.2 (after the fixes):
+40 of 40 passed all 3 runs. Q25 now passes (duplicate receipt at the accounts office). Full table and fixes:
+`docs/consistency-report.md`.
+
 ## Final run, after all stages (Stage F, 21 Oct 2026)
 
 All 40 questions were rerun with the finished bot (tools, consent step, rate limits), plus 10 extra
