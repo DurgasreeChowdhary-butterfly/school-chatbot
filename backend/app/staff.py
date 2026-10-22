@@ -1,5 +1,5 @@
 """Staff page at /staff: login with ADMIN_PASSWORD, see enquiries, tickets, callbacks and the outbox,
-change statuses, export CSV, and run the reminder job by hand."""
+change statuses, resend emails, export CSV, and run the reminder job by hand."""
 import csv
 import hmac
 import io
@@ -15,7 +15,7 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from pydantic import BaseModel
 
-from . import config, db, jobs
+from . import config, db, jobs, notify
 
 log = logging.getLogger("chatbot.staff")
 router = APIRouter()
@@ -147,6 +147,8 @@ def staff_data(request: Request):
         "tickets": db.list_rows("tickets"),
         "callbacks": db.list_rows("callbacks"),
         "outbox": db.list_rows("outbox")[:300],
+        "email_on": notify.smtp_configured(),
+        "test_mode": notify.test_mode(),
     }
 
 
@@ -174,6 +176,23 @@ def run_reminders_now(request: Request):
     _require_login(request)
     _require_same_site_request(request)
     return {"notifications": jobs.run_reminders()}
+
+
+class Resend(BaseModel):
+    id: int
+
+
+@router.post("/staff/api/resend")
+def resend_email(req: Resend, request: Request):
+    _require_login(request)
+    _require_same_site_request(request)
+    if not notify.smtp_configured():
+        raise HTTPException(status_code=400, detail="Email is not set up (SMTP_HOST is empty in .env).")
+    row = notify.resend(req.id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Not found.")
+    log.info("Staff resent email %s: %s", req.id, row["status"])
+    return {"ok": True, "status": row["status"], "error": row["error"]}
 
 
 @router.get("/staff/export/{kind}.csv")

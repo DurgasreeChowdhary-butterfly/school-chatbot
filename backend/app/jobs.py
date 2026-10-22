@@ -1,14 +1,15 @@
 """Reminder and escalation job. Runs every 15 minutes in the background, and can be run
-by hand from the staff page. Working days are Monday to Friday (school holidays are not counted yet)."""
+by hand from the staff page. The same background thread sends pending emails and retries failed ones every minute. Working days are Monday to Friday (school holidays are not counted yet)."""
 import logging
 import threading
 from datetime import datetime, timedelta
 
 from . import db, routing
-from .notify import notify
+from .notify import notify, send_due
 
 log = logging.getLogger("chatbot.jobs")
-INTERVAL_SECONDS = 15 * 60
+INTERVAL_SECONDS = 15 * 60  # reminders and escalations
+EMAIL_RETRY_SECONDS = 60    # pending and failed emails
 
 
 def add_working_days(start: datetime, days: int) -> datetime:
@@ -52,12 +53,14 @@ def run_reminders(now: datetime | None = None) -> int:
         if (t["status"] == "Received" and not t["reminded_at"]
                 and is_due(t["created_at"], routing.deadline(campus, "ticket_acknowledge"), now)):
             notify(campus, routing.role(campus, t["first_contact"]),
-                   f"Reminder: please acknowledge ticket {t['ref']}", _ticket_text(t), t["ref"], "reminder")
+                   f"Reminder: please acknowledge ticket {t['ref']}", _ticket_text(t), t["ref"], "reminder",
+                   urgent=bool(t["urgent"]))
             db.update("tickets", t["ref"], reminded_at=db.now())
             made += 1
         if not t["escalated_at"] and is_due(t["created_at"], routing.deadline(campus, "ticket_escalation"), now):
             notify(campus, routing.role(campus, t["backup_contact"]),
-                   f"Escalation: ticket {t['ref']} not resolved", _ticket_text(t), t["ref"], "escalation")
+                   f"Escalation: ticket {t['ref']} not resolved", _ticket_text(t), t["ref"], "escalation",
+                   urgent=bool(t["urgent"]))
             db.update("tickets", t["ref"], escalated_at=db.now())
             made += 1
 
@@ -80,11 +83,19 @@ def _ticket_text(t: dict) -> str:
 
 def start_background_job(stop: threading.Event) -> threading.Thread:
     def loop():
-        while not stop.wait(INTERVAL_SECONDS):
+        ticks_per_reminder_run = INTERVAL_SECONDS // EMAIL_RETRY_SECONDS
+        tick = 0
+        while not stop.wait(EMAIL_RETRY_SECONDS):
+            tick += 1
+            if tick % ticks_per_reminder_run == 0:
+                try:
+                    run_reminders()
+                except Exception:
+                    log.exception("Reminder job failed")
             try:
-                run_reminders()
+                send_due()
             except Exception:
-                log.exception("Reminder job failed")
+                log.exception("Sending emails failed")
     thread = threading.Thread(target=loop, name="reminder-job", daemon=True)
     thread.start()
     return thread

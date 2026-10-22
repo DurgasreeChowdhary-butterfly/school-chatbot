@@ -72,7 +72,12 @@ CREATE TABLE IF NOT EXISTS outbox (
     kind TEXT NOT NULL,
     status TEXT NOT NULL,
     created_at TEXT NOT NULL,
-    error TEXT DEFAULT ''
+    error TEXT DEFAULT '',
+    priority INTEGER NOT NULL DEFAULT 0,
+    attempts INTEGER NOT NULL DEFAULT 0,
+    next_try_at TEXT,
+    sent_at TEXT,
+    sent_to TEXT DEFAULT ''
 );
 CREATE TABLE IF NOT EXISTS chat_sessions (
     id TEXT PRIMARY KEY,
@@ -84,6 +89,9 @@ CREATE TABLE IF NOT EXISTS chat_sessions (
     last_seen REAL NOT NULL
 );
 """
+
+NEW_OUTBOX_COLUMNS = {"priority": "INTEGER NOT NULL DEFAULT 0", "attempts": "INTEGER NOT NULL DEFAULT 0",
+                      "next_try_at": "TEXT", "sent_at": "TEXT", "sent_to": "TEXT DEFAULT ''"}
 
 # Reference prefixes shown to people: E-1001, T-1001, C-1001.
 PREFIX = {"enquiries": "E", "tickets": "T", "callbacks": "C"}
@@ -101,6 +109,11 @@ def init_db(path: Path | str | None = None) -> None:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     with connect() as conn:
         conn.executescript(SCHEMA)
+        # Databases made before these outbox columns existed get them added.
+        existing = {r["name"] for r in conn.execute("PRAGMA table_info(outbox)")}
+        for column, kind in NEW_OUTBOX_COLUMNS.items():
+            if column not in existing:
+                conn.execute(f"ALTER TABLE outbox ADD COLUMN {column} {kind}")
 
 
 @contextmanager

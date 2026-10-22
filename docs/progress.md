@@ -212,6 +212,31 @@ _In progress: see docs/consistency-report.md when the three live runs are finish
 - Staff logins and rate limits are still in memory (a restart logs staff out and resets the limits).
 - Two messages from the same chat at exactly the same moment: the later save wins (the chat window sends one at a time).
 
+### 4. Real email
+**Built**
+- `notify.py`: every notification is written to the outbox, then emailed through the SMTP settings in .env
+  (`SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURITY` = starttls / ssl / none, optional `SMTP_USER` and `SMTP_PASSWORD`, `SMTP_FROM`).
+- Outbox statuses: pending, sent (with the address used and the time), failed (with the error), blocked (not sent on
+  purpose, with the reason), logged (email not set up).
+- `TEST_MODE=true` (default): every email goes to `TEST_RECIPIENT`, with "[TEST, for <role> <address>]" in the subject.
+  Placeholder addresses such as example.com are never emailed, even with TEST_MODE off.
+- Urgent emails (safety tickets and their reminders) are sent before anything else waiting in the outbox.
+- Failed emails are retried by the background job (checks every minute; waits 1, 5, 15, 60 minutes; 5 tries in all).
+  The staff page shows tries and errors and has a Resend button on each row.
+- Sending runs in a background thread so the chat reply never waits for the mail server. Older databases get the new
+  outbox columns automatically.
+
+**Tested**
+- pytest with a fake SMTP server (a real local socket server, 14 new tests, 99 in total): redirect to the test recipient,
+  never to example.com (test mode on and off), no test recipient means nothing sent, real address with test mode off,
+  temporary failure then retry, retries stop after 5, server down, staff resend (login and header needed),
+  urgent safety emails sent before older routine ones, no SMTP means logged only, old database upgraded.
+- Not tested against a real mail provider (no SMTP account was used).
+
+**Still weak**
+- Emails waiting in the outbox are only retried while the server is running.
+- A real provider (Gmail, Microsoft 365, the school's own) may need an app password and limits the number of emails per day.
+
 ## Known weaknesses (overall)
 1. **Model quality and quota.** Development uses `gemini-3.5-flash-lite` on the free tier. It is a small model; the rules
    needed several rounds, and answers can vary from run to run. The bigger models failed (timeouts) or had a

@@ -71,7 +71,8 @@
   </section>
   <section class="panel">
     <div class="panel-head"><h2>Outbox</h2><a class="btn" href="/staff/export/outbox.csv">Export CSV</a>
-      <p>Every notification. "logged" means recorded only (no email settings); "sent" means emailed.</p></div>
+      <p>Every notification. "sent" = emailed; "failed" = will be retried (or press Resend); "blocked" = not sent on purpose
+        (placeholder address or no test address); "logged" = recorded only. <b id="emailNote"></b></p></div>
     <div class="scroll" id="outbox"></div>
   </section>
 </div>
@@ -118,16 +119,31 @@ async function load() {
   table("#callbacks", d.callbacks, ["Ref", "Name", "Mobile", "About", "To", "Status", "Logged"], c => [
     `<b>${esc(c.ref)}</b>`, esc(c.name), esc(c.mobile), { cls: "wrap-text", html: esc(c.reason) }, esc(c.assigned_to), statusSelect("callbacks", c), when(c.created_at)
   ]);
-  table("#outbox", d.outbox, ["When", "Kind", "To", "Subject", "Status"], m => [
-    when(m.created_at), esc(m.kind), `${esc(m.to_role)}<br><span class="muted">${esc(m.to_email)}</span>`,
+  $("#emailNote").textContent = !d.email_on ? "Email is not set up: messages are only kept here."
+    : d.test_mode ? "Test mode: every email goes to the test address, not to staff." : "";
+  table("#outbox", d.outbox, ["When", "Kind", "To", "Subject", "Status", ""], m => [
+    when(m.created_at) + (m.priority ? ' <span class="pill urgent">Urgent</span>' : ""), esc(m.kind),
+    `${esc(m.to_role)}<br><span class="muted">${esc(m.to_email)}</span>`,
     { cls: "wrap-text", html: `<details><summary>${esc(m.subject)}</summary><pre>${esc(m.body)}</pre></details>` },
-    `<span class="pill ${m.status === "sent" ? "ok" : m.status === "failed" ? "urgent" : "warn"}">${esc(m.status)}</span>`
+    { cls: "wrap-text", html: `<span class="pill ${m.status === "sent" ? "ok" : ["failed", "blocked"].includes(m.status) ? "urgent" : "warn"}">${esc(m.status)}</span>`
+      + (m.attempts > 1 ? ` <span class="muted">${m.attempts} tries</span>` : "")
+      + (m.sent_to && m.sent_to !== m.to_email ? `<br><span class="muted">to ${esc(m.sent_to)}</span>` : "")
+      + (m.error ? `<br><span class="muted">${esc(m.error)}</span>` : "") },
+    d.email_on && m.status !== "pending" && m.status !== "sending"
+      ? `<button type="button" data-resend="${m.id}" aria-label="Resend email ${m.id}">Resend</button>` : ""
   ]);
 }
 document.addEventListener("change", async e => {
   const s = e.target.closest("select[data-kind]"); if (!s) return;
   try { await api("/staff/api/status", { kind: s.dataset.kind, ref: s.dataset.ref, status: s.value }); toast(`${s.dataset.ref}: ${s.value}`); }
   catch (err) { toast("Could not save: " + err.message); load(); }
+});
+document.addEventListener("click", async e => {
+  const b = e.target.closest("button[data-resend]"); if (!b) return;
+  b.disabled = true;
+  try { const r = await api("/staff/api/resend", { id: Number(b.dataset.resend) }); toast(`Email ${r.status}`); }
+  catch (err) { toast("Could not resend: " + err.message); }
+  load();
 });
 $("#refresh").onclick = () => load().then(() => toast("Refreshed"));
 $("#remind").onclick = async () => { const r = await api("/staff/api/run-reminders", {}); toast(`${r.notifications} reminder(s) created`); load(); };

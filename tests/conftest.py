@@ -6,6 +6,10 @@ import os
 os.environ["LLM_PROVIDER"] = "fake"
 os.environ["DEMO_MODE"] = "true"
 os.environ["ADMIN_PASSWORD"] = "test-password"
+# Never send real email from tests, even if .env has SMTP settings (test_email.py uses a fake SMTP server).
+os.environ["SMTP_HOST"] = ""
+os.environ["TEST_MODE"] = "true"
+os.environ["TEST_RECIPIENT"] = ""
 
 import pytest
 from fastapi.testclient import TestClient

@@ -90,12 +90,12 @@ def create_ticket(args: dict, ctx) -> dict:
             f"Concern: {description}\nParent: {name}\nMobile: {mobile}")
     first = routing.role(campus, category["first"])
     notify(campus, first, f"{'URGENT ' if urgent else ''}New ticket {row['ref']}: {row['category']}",
-           body, row["ref"], "ticket")
+           body, row["ref"], "ticket", urgent=urgent)
     if urgent:
         # Safety concerns: tell the backup and the front office straight away too.
         for role in {category["backup"], routing.load(campus)["front_office"]} - {category["first"]}:
             notify(campus, routing.role(campus, role), f"URGENT ticket {row['ref']}: {row['category']}",
-                   body, row["ref"], "ticket")
+                   body, row["ref"], "ticket", urgent=True)
     log.info("Ticket %s (%s) created for %s", row["ref"], row["category"], mask_mobile(mobile))
 
     result = {
