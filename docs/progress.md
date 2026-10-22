@@ -292,6 +292,28 @@ _In progress: see docs/consistency-report.md when the three live runs are finish
 - **Not tested:** building and running the image. Docker is installed but Docker Desktop was not running, and starting
   it was left to you. Run `docker compose up -d --build` once on a test machine before the real server.
 
+### 8. Real-site embed test
+**Built**
+- `docs/embed-test.html`: a pretend school website (with deliberately clashing styles) that adds the chat with one
+  script tag pointing at the chatbot server on a different address. How to try it by hand is in the file.
+- `tests/test_embed_browser.py` (headless Google Chrome, Chromium if Chrome is missing): starts the chatbot allowing
+  one website origin, and serves the page from two website origins.
+
+**Tested**
+- Allowed website: the script comes from the other origin; campuses load from `/config`; the opening flow, a question
+  and the reply work; Demo label shown; no console errors; no sideways scroll at phone width. Screenshot 7.
+- Blocked website (not in ALLOWED_ORIGINS): the chat window opens but the message gets the friendly "I'm having
+  trouble" reply, and Chrome reports the CORS block. Screenshot 8.
+- Server side: the CORS preflight is answered only for the allowed origin.
+
+**What failed and how it was fixed**
+- The school site's `button, input { text-transform: uppercase }` changed the chat window's input. The widget CSS now
+  resets inherited text styles on its root and its buttons and inputs.
+
+**Still weak**
+- Only Chrome on Windows was tested; not Safari, Firefox or a real phone.
+- On a blocked site the visitor only sees "I'm having trouble"; the reason is visible only in the browser console.
+
 ## Known weaknesses (overall)
 1. **Model quality and quota.** Development uses `gemini-3.5-flash-lite` on the free tier. It is a small model; the rules
    needed several rounds, and answers can vary from run to run. The bigger models failed (timeouts) or had a

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Embed test: pretend school website</title>
+<link rel="icon" href="data:,">
+<!--
+  Embed test. This page stands in for the school's own website, served from a DIFFERENT address than the chatbot,
+  and adds the chat exactly the way the school website will: one script tag before </body>.
+
+  Try it by hand (two terminals, from the project folder):
+    1. Chatbot server, allowing this test website:
+         $env:ALLOWED_ORIGINS = "http://localhost:5500"; uvicorn backend.app.main:app --port 8000
+    2. The pretend website:
+         python -m http.server 5500 --directory docs
+    3. Open http://localhost:5500/embed-test.html : the chat works.
+       Open http://127.0.0.1:5500/embed-test.html : a different origin that is NOT allowed, so the chat window
+       opens but every message fails, and the browser console (F12) shows a CORS error.
+  The automated version is tests/test_embed_browser.py (headless Chrome).
+-->
+<style>
+  /* Deliberately "messy" site styles, to check the chat window is not affected by the school's CSS. */
+  * { box-sizing: content-box; }
+  body { margin: 0; font: 18px/1.8 Georgia, serif; background: #FBF7EF; color: #2B2118; }
+  button, input { font: 20px Georgia, serif; text-transform: uppercase; border: 3px solid #8B2E16; border-radius: 0; }
+  p { margin: 0 0 1.2em; }
+  header { background: #8B2E16; color: #FFF; padding: 18px 16px; }
+  header h1 { margin: 0; font-size: 26px; }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px 140px; }
+  .note { background: #FFF3D6; border: 1px solid #E3A21A; padding: 10px 14px; font: 14px/1.5 system-ui, sans-serif; }
+</style>
+</head>
+<body>
+  <header><h1>Demo International School (pretend website)</h1></header>
+  <main>
+    <p class="note"><b>Embed test page.</b> Dummy data only. The chat button in the corner is loaded from the chatbot
+      server with one script tag, like the real school website will do.</p>
+    <p>Welcome to our school. Admissions for 2027-28 are open. Use the chat button for admissions, fees, the calendar
+      or to share a concern.</p>
+    <button type="button">A site button</button>
+  </main>
+  <script src="http://localhost:8000/widget/chat.js" defer></script>
+</body>
+</html>

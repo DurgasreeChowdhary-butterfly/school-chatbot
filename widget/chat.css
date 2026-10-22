@@ -8,6 +8,9 @@
   --sc-good: #1E7B4F; --sc-bad: #B3261E; --sc-bad-soft: #FBE3E1;
   --sc-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   font-family: var(--sc-font); font-size: 15px; line-height: 1.5; color: var(--sc-ink);
+  /* Reset text styles a school website may set on body (found by tests/test_embed_browser.py). */
+  font-style: normal; font-weight: 400; text-align: left; text-transform: none; letter-spacing: normal;
+  word-spacing: normal; text-shadow: none; text-indent: 0;
 }
 @media (prefers-color-scheme: dark) {
   .sc-root:not([data-theme="light"]) {
@@ -28,7 +31,7 @@
   color-scheme: dark;
 }
 .sc-root *, .sc-root *::before, .sc-root *::after { box-sizing: border-box; }
-.sc-root button { font: inherit; color: inherit; }
+.sc-root button, .sc-root input { font: inherit; color: inherit; text-transform: inherit; letter-spacing: inherit; margin: 0; }
 .sc-root :focus-visible { outline: 3px solid var(--sc-gold); outline-offset: 2px; }
 
 /* Launcher button (bottom right) */
