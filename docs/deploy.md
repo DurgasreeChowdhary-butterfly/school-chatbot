@@ -75,7 +75,8 @@ The chatbot itself (port 8000) is **not** opened to the internet: only Caddy can
 for the chatbot. Caddy has a fixed address on a private Docker network (172.30.0.2), and the chatbot believes the
 visitor address only when it comes from Caddy (`FORWARDED_ALLOW_IPS` in docker-compose.yml). So nobody can fake their
 address to get around the per-IP rate limit (`tests/test_proxy_headers.py` proves this). If 172.30.0.0/24 is already
-used on the server, change the subnet and both addresses together.
+used on the server (`docker compose up` then says the pool overlaps), set `CHATBOT_SUBNET`, `CADDY_IP` and
+`CHATBOT_IP` in `.env` (see `.env.example`).
 
 ## 5. Start it
 

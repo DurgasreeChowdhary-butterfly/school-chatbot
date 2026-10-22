@@ -615,6 +615,22 @@ invalid number refused); the whole flow in a real browser.
 package in requirements.txt is pinned exactly; the installed versions match the lock (so the tests run with what the
 server gets); Docker uses the lock.
 
+### 7. Docker
+**Skipped:** Docker Desktop was not running (checked 22 Oct), so the image was not built and compose was not run.
+
+**Done without Docker**
+- The fixed network range: it is needed (the chatbot must know Caddy's address in advance to trust the visitor
+  address only from Caddy; trusting all private addresses would be unsafe if the port were ever published, and both
+  containers need fixed addresses so Docker's automatic numbering cannot collide with Caddy's). It is now
+  configurable: `CHATBOT_SUBNET`, `CADDY_IP`, `CHATBOT_IP` in .env, with 172.30.0.0/24, .2 and .3 as defaults.
+  `docker compose config` resolves both the defaults and an override correctly.
+- `scripts/docker_check.py`: the four checks in one command for when Docker runs (health, one chat, staff login,
+  41 requests with fake X-Forwarded-For headers must hit the per-address limit).
+
+**Tested**: pytest (2 new tests, 210 in total): compose trusts exactly Caddy's address, has no published chatbot port,
+and the image never trusts "*"; docker_check.py passes against uvicorn run like the image (proxy headers, a trusted
+proxy that is not the client).
+
 ## Known weaknesses (overall, updated 22 Oct 2026, after the real-content round)
 1. **Model quality and quota.** Development uses `gemini-3.5-flash-lite` on the free tier. It is a small model and
    answers vary between runs (see docs/consistency-report.md). The bigger models failed (timeouts) or had a

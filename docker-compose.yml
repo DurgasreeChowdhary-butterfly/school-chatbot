@@ -8,7 +8,7 @@ services:
     env_file: .env
     environment:
       DB_PATH: /app/data/chatbot.db
-      FORWARDED_ALLOW_IPS: 172.30.0.2   # only Caddy may say who the visitor is (see tests/test_proxy_headers.py)
+      FORWARDED_ALLOW_IPS: ${CADDY_IP:-172.30.0.2}   # only Caddy may say who the visitor is (tests/test_proxy_headers.py)
     volumes:
       - chatbot-data:/app/data          # the database and its backups; survives rebuilds
       - ./kb:/app/kb:ro                 # school content: replace files, then: docker compose restart chatbot
@@ -17,7 +17,7 @@ services:
       - "8000"                          # only Caddy can reach the app; it is not open to the internet directly
     networks:
       inside:
-        ipv4_address: 172.30.0.3
+        ipv4_address: ${CHATBOT_IP:-172.30.0.3}
     restart: unless-stopped
 
   caddy:
@@ -35,14 +35,17 @@ services:
       - chatbot
     networks:
       inside:
-        ipv4_address: 172.30.0.2        # fixed, so the chatbot can trust exactly this address
+        ipv4_address: ${CADDY_IP:-172.30.0.2}   # fixed, so the chatbot can trust exactly this address
     restart: unless-stopped
 
+# A private network with fixed addresses. The chatbot must know Caddy's address in advance to trust the visitor
+# address only from Caddy. If 172.30.0.0/24 is already used on the server, set CHATBOT_SUBNET, CADDY_IP and
+# CHATBOT_IP in .env (both addresses inside the subnet, neither ending in .1, which Docker keeps for itself).
 networks:
   inside:
     ipam:
       config:
-        - subnet: 172.30.0.0/24
+        - subnet: ${CHATBOT_SUBNET:-172.30.0.0/24}
 
 volumes:
   chatbot-data:
