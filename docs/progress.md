@@ -631,6 +631,14 @@ server gets); Docker uses the lock.
 and the image never trusts "*"; docker_check.py passes against uvicorn run like the image (proxy headers, a trusted
 proxy that is not the client).
 
+### 8. Two guides
+- `docs/staff-guide.md` (school staff, very simple English): logging in, reading new enquiries, changing a status
+  (what each status means), answering a concern (urgent ones first), deleting a person's data on request, the other
+  boxes and banners, privacy rules. Labels and messages checked against the real staff page.
+- `docs/runbook.md` (for the person running the server): "I'm having trouble" (log message -> cause -> fix table),
+  AI quota (reset time, switching model, paid tier), email stops, restarting, restoring a backup, updating content,
+  reading the logs (what each important line means), regular checks. Linked from the README.
+
 ## Known weaknesses (overall, updated 22 Oct 2026, after the real-content round)
 1. **Model quality and quota.** Development uses `gemini-3.5-flash-lite` on the free tier. It is a small model and
    answers vary between runs (see docs/consistency-report.md). The bigger models failed (timeouts) or had a
@@ -651,8 +659,10 @@ proxy that is not the client).
     or fail an unusual correct one, and must be updated with the real content. A person should still read answers.
 11. **Browser support** was tested in headless Chromium and Chrome on Windows (desktop and phone size), not Safari/Firefox or a real phone.
 12. **Not deployed.** The Docker image was never built here (Docker Desktop was not running); follow docs/deploy.md on a test machine first.
-13. **Records are never deleted.** The privacy notice says 12 months; a nightly clean-up is still needed (docs/security-review.md).
+13. **Old records are deleted only if the nightly purge is scheduled** (docs/deploy.md); deletion on request is on the staff page.
 14. **Package versions are pinned** (requirements.lock.txt); updates must be made on purpose, with tests and `pip-audit`.
-15. **Simulated users: only 1 of 10 planned runs per scenario** before the free quota ran out (all passed).
+15. **Simulated users: only 1 of 10 planned runs per scenario** before the free quota ran out (all passed); not
+    continued in the third round (no live AI calls).
+17. **Docker has never been built or run here** (Docker Desktop was not running in any round).
 16. **Document ingestion sorts lines by keywords**; drafts need a careful human edit, and conflicts are only checked
     for fees, holiday dates and role contacts.
