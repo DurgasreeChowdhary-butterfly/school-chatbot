@@ -54,7 +54,8 @@ School name, campuses and menu buttons come from `kb/school.json`.
   from the staff page. `TEST_MODE=true` (the default) sends every email to `TEST_RECIPIENT` only, and nothing is
   ever sent to an example.com address.
 - A reminder job (every 15 minutes) reminds and escalates enquiries and tickets after the working-day deadlines in
-  `kb/<campus>/routing.json`.
+  `kb/<campus>/routing.json`. Working days (Monday to Saturday, which Saturdays, school holidays) are in
+  `config/working_days.json`.
 
 ## Test
 - **Automated tests** (FakeLLM, no API calls, free, about 15 seconds): `python -m pytest`
@@ -83,6 +84,8 @@ All AI calls go through `backend/app/llm/`. Only files in that folder may import
    `privacy_notice.md` must be the school's approved notice.
 2. Update `kb/<campus>/routing.json` to match `escalation.md` and `contacts.md` (real role emails, classes, deadlines).
    The test `test_routing_file_matches_escalation_md` checks the categories agree.
-3. Update `kb/school.json` (school name, campuses, menu buttons). A new campus needs its own `kb/<campus-id>/` folder.
-4. Set `DEMO_MODE=false` in .env only when everything in kb/ is real and approved.
-5. Restart the server, run `python -m pytest`, then the answer-quality test, and update `docs/test-report.md`.
+3. Update the holidays and working Saturdays in `config/working_days.json` to match the real `calendar.md`.
+   The test `test_config_holidays_match_calendar_md` checks they agree.
+4. Update `kb/school.json` (school name, campuses, menu buttons). A new campus needs its own `kb/<campus-id>/` folder.
+5. Set `DEMO_MODE=false` in .env only when everything in kb/ is real and approved.
+6. Restart the server, run `python -m pytest`, then the answer-quality test, and update `docs/test-report.md`.

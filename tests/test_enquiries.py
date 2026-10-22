@@ -145,16 +145,16 @@ def test_working_days_skip_weekends():
 
 
 def test_enquiry_reminder_then_escalation(client):
-    make_enquiry("2026-10-19T10:00:00")  # a Monday
-    assert jobs.run_reminders(datetime(2026, 10, 20, 9, 0)) == 0      # not yet 1 working day
-    assert jobs.run_reminders(datetime(2026, 10, 20, 10, 0)) == 1     # reminder to counsellor
-    assert jobs.run_reminders(datetime(2026, 10, 20, 12, 0)) == 0     # not repeated
-    assert jobs.run_reminders(datetime(2026, 10, 21, 10, 0)) == 1     # escalate to front office
-    assert jobs.run_reminders(datetime(2026, 10, 25, 10, 0)) == 0
+    make_enquiry("2026-10-26T10:00:00")  # a Monday
+    assert jobs.run_reminders(datetime(2026, 10, 27, 9, 0)) == 0      # not yet 1 working day
+    assert jobs.run_reminders(datetime(2026, 10, 27, 10, 0)) == 1     # reminder to counsellor
+    assert jobs.run_reminders(datetime(2026, 10, 27, 12, 0)) == 0     # not repeated
+    assert jobs.run_reminders(datetime(2026, 10, 28, 10, 0)) == 1     # escalate to front office
+    assert jobs.run_reminders(datetime(2026, 11, 1, 10, 0)) == 0
     kinds = [(m["kind"], m["to_role"]) for m in reversed(db.list_rows("outbox"))]
     assert kinds == [("reminder", "Admission counsellor"), ("escalation", "Front office")]
 
 
 def test_no_reminder_once_contacted(client):
-    make_enquiry("2026-10-19T10:00:00", status="Contacted")
-    assert jobs.run_reminders(datetime(2026, 10, 30, 10, 0)) == 0
+    make_enquiry("2026-10-26T10:00:00", status="Contacted")
+    assert jobs.run_reminders(datetime(2026, 11, 6, 10, 0)) == 0

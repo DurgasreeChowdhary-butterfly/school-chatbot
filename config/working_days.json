@@ -1,0 +1,13 @@
+{
+  "_note": "Working days for reminder and escalation deadlines (see kb/<campus>/routing.json for how many days). DUMMY DATA: taken from the dummy kb/pilot-campus/calendar.md. When the real calendar arrives, update the holidays here too (scripts/check_kb.py and the tests compare the holiday names with calendar.md). week: 'Monday to Friday' or 'Monday to Saturday'. working_saturdays: which Saturdays of the month are working days when the week is Monday to Saturday ('all' for every Saturday). Holiday dates are YYYY-MM-DD; 'to' is the last day off and may be left out for a one-day holiday.",
+  "week": "Monday to Saturday",
+  "working_saturdays": [1, 3],
+  "holidays": [
+    {"name": "Dussehra", "from": "2026-10-19", "to": "2026-10-21"},
+    {"name": "Diwali", "from": "2026-11-08", "to": "2026-11-11"},
+    {"name": "Christmas", "from": "2026-12-25"},
+    {"name": "Sankranti", "from": "2027-01-13", "to": "2027-01-16"},
+    {"name": "Summer vacation", "from": "2027-05-01", "to": "2027-05-31",
+     "_note": "calendar.md only says 'from 1 May 2027'; the end is assumed to be the day before the next year starts (1 June). Confirm with the school."}
+  ]
+}

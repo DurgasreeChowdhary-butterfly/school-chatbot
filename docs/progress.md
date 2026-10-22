@@ -237,6 +237,24 @@ _In progress: see docs/consistency-report.md when the three live runs are finish
 - Emails waiting in the outbox are only retried while the server is running.
 - A real provider (Gmail, Microsoft 365, the school's own) may need an app password and limits the number of emails per day.
 
+### 5. Working days
+**Built**
+- `config/working_days.json`: `week` ("Monday to Saturday" or "Monday to Friday"), `working_saturdays` ([1, 3] from
+  calendar.md, or "all"), and the holidays from `kb/pilot-campus/calendar.md` (dates as YYYY-MM-DD).
+- `backend/app/workdays.py` reads and checks it (clear messages for mistakes; the server will not start with a broken
+  file). Reminder and escalation deadlines now skip Sundays, non-working Saturdays and holidays.
+
+**Tested**
+- pytest (10 new tests, 109 in total): 1st/3rd Saturdays, holidays (Diwali, one-day Christmas), the two week settings,
+  four kinds of mistakes in the file, holidays agree with calendar.md, an enquiry reminder that waits for Dussehra to end,
+  a ticket escalation across a working Saturday and Diwali.
+- Two older reminder tests used 19-22 Oct 2026, which are now Dussehra holidays; they were moved one week later
+  (same checks).
+
+**Still weak**
+- The summer vacation end (31 May 2027) is assumed: calendar.md only says "from 1 May 2027".
+- One calendar for all campuses; a second campus with different holidays would need its own file.
+
 ## Known weaknesses (overall)
 1. **Model quality and quota.** Development uses `gemini-3.5-flash-lite` on the free tier. It is a small model; the rules
    needed several rounds, and answers can vary from run to run. The bigger models failed (timeouts) or had a

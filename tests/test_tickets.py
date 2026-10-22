@@ -120,22 +120,22 @@ def make_ticket(created_at: str, status="Received", category="Transport"):
 
 
 def test_ticket_acknowledge_reminder_then_escalation_to_backup():
-    make_ticket("2026-10-19T10:00:00")  # Monday
-    assert jobs.run_reminders(datetime(2026, 10, 20, 9, 59)) == 0
-    assert jobs.run_reminders(datetime(2026, 10, 20, 10, 0)) == 1   # 1 working day: remind first contact
-    assert jobs.run_reminders(datetime(2026, 10, 22, 9, 0)) == 0
-    assert jobs.run_reminders(datetime(2026, 10, 22, 10, 0)) == 1   # 3 working days: escalate to backup
-    assert jobs.run_reminders(datetime(2026, 10, 30, 10, 0)) == 0
+    make_ticket("2026-10-26T10:00:00")  # Monday
+    assert jobs.run_reminders(datetime(2026, 10, 27, 9, 59)) == 0
+    assert jobs.run_reminders(datetime(2026, 10, 27, 10, 0)) == 1   # 1 working day: remind first contact
+    assert jobs.run_reminders(datetime(2026, 10, 29, 9, 0)) == 0
+    assert jobs.run_reminders(datetime(2026, 10, 29, 10, 0)) == 1   # 3 working days: escalate to backup
+    assert jobs.run_reminders(datetime(2026, 11, 6, 10, 0)) == 0
     sent = [(m["kind"], m["to_role"]) for m in reversed(db.list_rows("outbox"))]
     assert sent == [("reminder", "Transport coordinator"), ("escalation", "Principal")]
 
 
 def test_acknowledged_ticket_gets_no_reminder_but_still_escalates():
-    make_ticket("2026-10-19T10:00:00", status="In progress")
-    assert jobs.run_reminders(datetime(2026, 10, 20, 10, 0)) == 0
-    assert jobs.run_reminders(datetime(2026, 10, 22, 10, 0)) == 1
+    make_ticket("2026-10-26T10:00:00", status="In progress")
+    assert jobs.run_reminders(datetime(2026, 10, 27, 10, 0)) == 0
+    assert jobs.run_reminders(datetime(2026, 10, 29, 10, 0)) == 1
 
 
 def test_resolved_ticket_is_left_alone():
     make_ticket("2026-10-01T10:00:00", status="Resolved")
-    assert jobs.run_reminders(datetime(2026, 10, 30, 10, 0)) == 0
+    assert jobs.run_reminders(datetime(2026, 11, 6, 10, 0)) == 0

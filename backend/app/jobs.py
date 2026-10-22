@@ -1,25 +1,17 @@
 """Reminder and escalation job. Runs every 15 minutes in the background, and can be run
-by hand from the staff page. The same background thread sends pending emails and retries failed ones every minute. Working days are Monday to Friday (school holidays are not counted yet)."""
+by hand from the staff page. The same background thread sends pending emails and retries failed ones every minute.
+Deadlines count working days from config/working_days.json (weekends, non-working Saturdays and holidays skipped)."""
 import logging
 import threading
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from . import db, routing
+from .workdays import add_working_days
 from .notify import notify, send_due
 
 log = logging.getLogger("chatbot.jobs")
 INTERVAL_SECONDS = 15 * 60  # reminders and escalations
 EMAIL_RETRY_SECONDS = 60    # pending and failed emails
-
-
-def add_working_days(start: datetime, days: int) -> datetime:
-    """The moment `days` working days after `start` (Saturdays and Sundays skipped)."""
-    moment = start
-    while days > 0:
-        moment += timedelta(days=1)
-        if moment.weekday() < 5:  # Monday=0 ... Friday=4
-            days -= 1
-    return moment
 
 
 def is_due(created_at: str, days: int, now: datetime) -> bool:

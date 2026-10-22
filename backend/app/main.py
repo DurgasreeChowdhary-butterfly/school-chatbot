@@ -12,7 +12,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, StringConstraints
 
-from . import config, db, jobs, sessions, staff
+from . import config, db, jobs, sessions, staff, workdays
 from .chat_service import FALLBACK_REPLY, handle_message
 from .knowledge import KB_DIR, load_all_campuses
 from .llm.base import LLMProvider
@@ -53,6 +53,7 @@ async def lifespan(app: FastAPI):
     """On start: create the database and start the reminder job. On stop: stop the job."""
     setup_logging()  # again, now that uvicorn's own log handlers exist
     db.init_db()
+    workdays.load()  # a mistake in config/working_days.json stops the server here, with a clear message
     stop = threading.Event()
     jobs.start_background_job(stop)
     yield
