@@ -314,23 +314,23 @@ _In progress: see docs/consistency-report.md when the three live runs are finish
 - Only Chrome on Windows was tested; not Safari, Firefox or a real phone.
 - On a blocked site the visitor only sees "I'm having trouble"; the reason is visible only in the browser console.
 
-## Known weaknesses (overall)
-1. **Model quality and quota.** Development uses `gemini-3.5-flash-lite` on the free tier. It is a small model; the rules
-   needed several rounds, and answers can vary from run to run. The bigger models failed (timeouts) or had a
+## Known weaknesses (overall, updated 22 Oct 2026)
+1. **Model quality and quota.** Development uses `gemini-3.5-flash-lite` on the free tier. It is a small model and
+   answers vary between runs (see docs/consistency-report.md). The bigger models failed (timeouts) or had a
    20-requests-per-day free quota. A paid tier is needed before real use, and real parent or child data must never
    go through the free tier.
 2. **Rule-following is not guaranteed.** Privacy, confirmation, consent and ticket lookups are enforced in code, but
    wording (no promises, no comparisons, safety advice) relies on the model following `prompts.py`.
    Re-run the answer-quality test after every change to rules, model or content.
-3. **Everything in memory resets on restart:** chat sessions, pending enquiries, consent, staff logins and rate limits.
-   Saved enquiries, tickets, callbacks and the outbox are safe in SQLite.
-4. **One server only.** In-memory sessions and rate limits do not work across several server processes. Behind a proxy
-   the per-IP limit sees the proxy's address unless the proxy setup is changed.
-5. **Working days ignore school holidays**, and reminders only run while the server is running.
+3. **Staff logins and rate limits are still in memory** and reset on restart. Chat sessions, consent and pending
+   enquiries are now in SQLite and survive a restart.
+4. **One server process.** Staff logins and rate limits do not work across several processes (the Docker set-up runs one).
+5. **Reminders and email retries only run while the server is running.** The summer vacation end date is assumed.
 6. **One shared staff password**, no per-person accounts or record of who changed what.
-7. **No real email yet**: notifications are only in the outbox and log until SMTP settings are added.
+7. **Email is built but not tried with a real mail provider**; only with a fake SMTP server in the tests.
 8. **Duplicate enquiries are matched by mobile only.**
 9. **The AI chooses the ticket category**; a wrong choice routes to the wrong person until staff notice.
-10. **Answers are judged by hand**; there is no automatic scoring of the 40 questions.
-11. **Browser support** was tested only in headless Chromium (desktop and phone size), not Safari/Firefox or a real phone.
-12. **No HTTPS or hosting set-up yet**; the staff cookie is marked Secure only when served over HTTPS.
+10. **Automatic answer checks look for key facts and phrases** (docs/test-checks.json); they can pass a clumsy answer
+    or fail an unusual correct one, and must be updated with the real content. A person should still read answers.
+11. **Browser support** was tested in headless Chromium and Chrome on Windows (desktop and phone size), not Safari/Firefox or a real phone.
+12. **Not deployed.** The Docker image was not built here (Docker Desktop was not running); follow docs/deploy.md on a test machine first.

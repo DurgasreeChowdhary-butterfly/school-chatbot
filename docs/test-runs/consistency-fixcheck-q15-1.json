@@ -1,0 +1,10 @@
+[
+  {
+    "id": "15",
+    "group": "prospective",
+    "question": "Are you hiring teachers?",
+    "expected": "answer: no openings listed; send resume",
+    "source_file": "hiring.md",
+    "reply": "Current openings are none listed. If you'd like to apply, please send your resume to hr@example.com with the subject \"Application: <position>\". Teaching positions need a relevant degree and teaching qualification."
+  }
+]

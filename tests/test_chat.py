@@ -121,3 +121,47 @@ def test_only_llm_folder_imports_provider_sdks():
         if "llm" not in p.parts and pattern.search(p.read_text(encoding="utf-8"))
     ]
     assert offenders == []
+
+
+def test_garbled_email_addresses_are_repaired(client, fake):
+    """Found in the consistency test: the model once wrote hr.example.com instead of hr@example.com."""
+    fake.add(LLMResult(text="Send your resume to hr.example.com or HR at example.com. Accounts: "
+                            "accounts.campusa (at) example.com. Keep admissions.campusa@example.com as it is."))
+    reply = chat(client, "Are you hiring?")["reply"]
+    assert reply == ("Send your resume to hr@example.com or hr@example.com. Accounts: accounts.campusa@example.com. "
+                     "Keep admissions.campusa@example.com as it is.")
+    chat(client, "Thanks")
+    assert "hr.example.com" not in fake.calls[-1]["messages"][1].content  # the repaired reply is remembered
+
+
+def test_email_repair_leaves_other_text_alone():
+    from backend.app.chat_service import repair_emails
+    knowledge = "Email hr@example.com or accounts.campusa@example.com."
+    for text in ["Visit www.example.com", "The office (hr) is open", "Write to hr@example.com"]:
+        assert repair_emails(text, knowledge) == text
+
+
+def test_made_up_contact_gets_one_corrected_reply(client, fake):
+    """Found in the consistency test: the model invented hr.campusa@example.com."""
+    fake.add(LLMResult(text="Send your resume to hr.campusa@example.com."),
+             LLMResult(text="Send your resume to hr@example.com."))
+    assert chat(client, "Are you hiring?")["reply"] == "Send your resume to hr@example.com."
+    note = fake.calls[-1]["messages"][-1]
+    assert note.role == "user" and "hr.campusa@example.com" in note.content
+    chat(client, "Thanks")
+    remembered = [m.content for m in fake.calls[-1]["messages"]]
+    assert remembered[:2] == ["Are you hiring?", "Send your resume to hr@example.com."]  # the check is not remembered
+
+
+def test_made_up_contact_twice_is_replaced_by_the_front_office(client, fake):
+    fake.add(LLMResult(text="Call +91 98765 00000 or mail hr.campusa@example.com."),
+             LLMResult(text="Call +91 98765 00000 or mail hr.campusa@example.com."))
+    reply = chat(client, "Are you hiring?")["reply"]
+    assert reply == "Call the front office (+91 00000 00001) or mail the front office (+91 00000 00001)."
+
+
+def test_contacts_from_knowledge_or_the_person_need_no_check(client, fake):
+    fake.add(LLMResult(text="I have your number 98765 43210. The front office is on +91 00000 00001, "
+                            "and the counsellor is admissions.campusa@example.com."))
+    chat(client, "My number is 9876543210")
+    assert len(fake.calls) == 1

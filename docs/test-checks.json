@@ -16,7 +16,7 @@
          "none": ["she (can|will) (join|be admitted)", "guarantee[ds]? (her|admission|a seat)", "she is eligible"], "consent": false},
   "13": {"all": [["weekend"], ["March"], ["April"]], "consent": false},
   "14": {"all": [["8:45"], ["15:15", "3:15"], ["12:30"]], "consent": false},
-  "15": {"all": [["hr@example\\.com"], ["no (current )?(teacher |teaching )?openings", "none listed", "not .{0,30}openings", "no .{0,20}vacanc", "no openings"]], "consent": false},
+  "15": {"all": [["hr@example\\.com"], ["no .{0,30}(openings|positions|vacanc)", "none listed", "not .{0,30}(openings|positions)", "not hiring"]], "consent": false},
   "16": {"all": [["DUMMY-0000"]], "consent": false},
   "17": {"all": [["don't have", "do not have", "not sure", "no information", "don't know", "not able to confirm"], ["front office", "00000 00001"]],
          "none": ["yes,? (we|the school) ha(s|ve)"], "consent": false},

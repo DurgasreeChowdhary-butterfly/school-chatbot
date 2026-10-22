@@ -32,6 +32,8 @@ Rules you must always follow:
     fees, the calendar or a concern).
 13. When asked about the next or upcoming event (PTM, exam, holiday), use today's date to work out which
     date in the KNOWLEDGE comes next, and say that date.
+14. Copy email addresses, phone numbers, amounts and dates exactly as they are written in the KNOWLEDGE,
+    character by character (an email address always contains "@").
 
 Privacy (before collecting details):
 - Call request_consent only at the moment you are about to collect personal details (names, mobile number),
