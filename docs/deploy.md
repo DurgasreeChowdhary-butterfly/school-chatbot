@@ -71,8 +71,10 @@ certificate for `CHATBOT_DOMAIN` the first time it starts, and renews it by itse
 - ports 80 and 443 open.
 
 The chatbot itself (port 8000) is **not** opened to the internet: only Caddy can reach it. Do not add a `ports:` line
-for the chatbot. (The app trusts the visitor IP that Caddy passes on; if port 8000 were public, someone could fake it
-and get around the per-IP rate limit.)
+for the chatbot. Caddy has a fixed address on a private Docker network (172.30.0.2), and the chatbot believes the
+visitor address only when it comes from Caddy (`FORWARDED_ALLOW_IPS` in docker-compose.yml). So nobody can fake their
+address to get around the per-IP rate limit (`tests/test_proxy_headers.py` proves this). If 172.30.0.0/24 is already
+used on the server, change the subnet and both addresses together.
 
 ## 5. Start it
 

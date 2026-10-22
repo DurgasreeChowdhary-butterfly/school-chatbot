@@ -114,8 +114,9 @@ Already: 5 wrong passwords per IP address in 15 minutes block that address; cons
 3. **Logout and login are not CSRF-protected** (SameSite=Strict covers most cases); impact is low with one shared account.
 4. **Records are kept forever.** The privacy notice says 12 months, but nothing deletes old enquiries, tickets, callbacks
    or outbox emails yet (chat sessions are deleted after 2 hours idle). Add a nightly clean-up before real use.
-5. **The per-IP rate limit depends on the proxy set-up** (see the X-Forwarded-For test in docs/progress.md, item 5).
-   Someone with many addresses can still use up the AI quota; a daily cap on chats would limit the cost.
+5. **Someone with many real addresses can still use up the AI quota** (the per-IP limit cannot stop that); a daily cap
+   on chats would limit the cost. Faking an address with an `X-Forwarded-For` header no longer works: the Docker set-up
+   believes that header only from Caddy's fixed address (it trusted every address before; `tests/test_proxy_headers.py`).
 6. **Prompt injection** can still change the bot's wording; saving, consent, confirmation and lookups are enforced in code.
 7. **Package versions are not pinned** (`requirements.txt` has names only). Pin them (`pip freeze`) before deploying so
    the server gets exactly the tested versions, and re-run `pip-audit` monthly.

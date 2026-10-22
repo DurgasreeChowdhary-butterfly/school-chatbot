@@ -468,6 +468,24 @@ the real key is only in `.env`. `pip-audit`: no known vulnerabilities.
 **Still open** (see the review): one shared staff password, records never deleted (privacy notice says 12 months),
 unpinned package versions, logins and limits in memory.
 
+### 5. Docker
+**Skipped:** Docker is installed but Docker Desktop was not running (checked twice on 22 Oct), so the image was not built
+and docker compose was not run. To do it yourself: start Docker Desktop, then
+`$env:CHATBOT_DOMAIN="localhost"; docker compose up -d --build`, open http://localhost/health (Caddy serves plain http
+for "localhost"-style test hosts only if told to; see docs/deploy.md), and run the checks below.
+
+**Tested without Docker (the part that matters for the rate limit):** `tests/test_proxy_headers.py` starts uvicorn
+exactly as the image does (`--proxy-headers`, trusted proxy from `FORWARDED_ALLOW_IPS`), with 127.0.0.2 as the proxy
+and 127.0.0.1 as a direct client, and uses `/consent` (rate limited like `/chat`, no AI calls):
+- A client sending its own fake `X-Forwarded-For` values is still limited by its real address (4th request: 429).
+- Through the proxy, the limit uses the real visitor address the proxy added, not the fake one the visitor sent first;
+  another visitor behind the same proxy is not blocked.
+- With the old setting `--forwarded-allow-ips "*"` a direct client **could** dodge the limit with fake headers.
+
+**Fixed:** the Dockerfile no longer trusts every address. docker-compose.yml gives Caddy a fixed address
+(172.30.0.2) on a private network and sets `FORWARDED_ALLOW_IPS` to it; the image's default trusts only 127.0.0.1.
+`docker compose config` accepts the file. 3 new tests (172 in total).
+
 ## Known weaknesses (overall, updated 22 Oct 2026)
 1. **Model quality and quota.** Development uses `gemini-3.5-flash-lite` on the free tier. It is a small model and
    answers vary between runs (see docs/consistency-report.md). The bigger models failed (timeouts) or had a

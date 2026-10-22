@@ -3,7 +3,8 @@ FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    DB_PATH=/app/data/chatbot.db
+    DB_PATH=/app/data/chatbot.db \
+    FORWARDED_ALLOW_IPS=127.0.0.1
 
 WORKDIR /app
 COPY requirements.txt .
@@ -27,5 +28,6 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
 
 # One process only: staff logins and rate limits are kept in memory.
 # --proxy-headers: behind Caddy, use the visitor's real IP address (for rate limits) and https (for secure cookies).
-CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", \
-     "--proxy-headers", "--forwarded-allow-ips", "*"]
+# Only the proxy in FORWARDED_ALLOW_IPS is believed (docker-compose.yml sets Caddy's fixed address). Never "*":
+# then anyone reaching the app could fake their address and dodge the rate limit (tests/test_proxy_headers.py).
+CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--proxy-headers"]
