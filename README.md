@@ -84,6 +84,13 @@ All AI calls go through `backend/app/llm/`. Only files in that folder may import
 - Before any real parent or child data is used, move to a paid tier or provider whose terms fit the school's privacy rules.
 
 ## Replace the dummy content with the school's real content
+**Step 0, the school's documents (PDF, Word, Excel, photos):** put them in `incoming/` (not stored in Git) and run
+`python scripts/ingest_docs.py`. It writes drafts in the same structure as kb/ to `drafts/pilot-campus/`, marks
+anything unclear, missing or conflicting with "NEEDS REVIEW: ...", writes "Not provided" where the documents say
+nothing (it never makes up facts and does not use the AI), and lists questions for the school in
+`docs/content-review.md`. Photos are read with the OCR built into Windows 10/11. Fix every mark, then
+`python scripts/approve_kb.py` copies the drafts into kb/ (it refuses while any mark is left), then carry on below.
+
 1. For each campus, replace the files in `kb/<campus>/` with the school-approved versions. Keep the file names and headings.
    `privacy_notice.md` must be the school's approved notice.
 2. Update `kb/<campus>/routing.json` to match `escalation.md` and `contacts.md` (real role emails, classes, deadlines).

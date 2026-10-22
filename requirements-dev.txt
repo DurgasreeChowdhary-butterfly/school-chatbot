@@ -2,3 +2,9 @@
 pytest
 httpx
 playwright
+# Reading the school's documents (scripts/ingest_docs.py) and making test documents
+pypdf
+python-docx
+openpyxl
+fpdf2
+pillow

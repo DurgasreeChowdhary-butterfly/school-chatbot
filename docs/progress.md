@@ -355,6 +355,48 @@
 - Only Chrome on Windows was tested; not Safari, Firefox or a real phone.
 - On a blocked site the visitor only sees "I'm having trouble"; the reason is visible only in the browser console.
 
+## Real-content round (22 Oct 2026)
+
+### 1. Document ingestion
+**Built**
+- `scripts/ingest_docs.py`: reads everything in `incoming/` (in .gitignore): PDF (text), Word (.docx, with tables),
+  Excel (.xlsx), .txt/.md/.csv, and photos with the OCR built into Windows (`scripts/ocr_windows.ps1`, free, offline).
+  Old .doc/.xls, scanned PDFs and unreadable files are listed as "needs manual typing".
+- It sorts each line into the kb file and section it belongs to (same names and headings as kb/pilot-campus), keeps a
+  `<!-- source: file, page -->` note, and marks "NEEDS REVIEW: <reason>" for: misread text, tentative wording,
+  dates without a year, open-ended dates, relative dates, possible personal data (Aadhaar-like or personal mobile
+  numbers), and the same fact with different values (fees per class and type, holiday dates, role phones/emails).
+- Empty sections and files say "Not provided". The required lines (Office hours, Front office phone, Admission
+  counsellor, Holidays:) are always present; the Holidays line is built only from dates in the documents.
+- `docs/content-review.md`: documents read, files needing manual typing, numbered questions for the school
+  (conflicts, missing items per file, things to confirm), a list for the reviewer (misread text, personal data),
+  and unsorted lines. It is rule-based: it does not use the AI, so it cannot invent facts.
+- `scripts/approve_kb.py`: copies drafts to kb/ only when no NEEDS REVIEW is left and the headings are there
+  (all files, or `--partial`), removes the draft notes and source comments, backs up the replaced files to
+  `drafts/_replaced/`, then runs the content checker.
+
+**Tested**
+- Three fake messy documents (`tests/messy_docs.py`): a PDF fee circular (wrapped sentence, tentative late fee),
+  a Word calendar (holiday table with From/To columns, open-ended vacation, "to be announced"), and a "photo" text file
+  (OCR mistakes like SCH00L and n0t, "next Saturday", a personal mobile number, and an annual fee of Rs 27,000 that
+  conflicts with Rs 26,000 in the circular). The sample report is `docs/content-review.md`.
+- pytest (12 new tests, 140 in total): every file drafted with its headings; the conflict is marked on both lines and
+  asked; each kind of unclear line is marked; missing topics say Not provided; the Holidays line; no number appears in
+  the drafts that is not in the documents; unreadable files are listed; a real photo read with Windows OCR;
+  approve refuses with marks left, copies clean files and backs up, `--partial`, and a missing heading.
+
+**What failed and how it was fixed**
+- "Admission counsellor: ..." was sorted into admissions.md, so contacts.md said it was missing; lines the chatbot
+  needs in a file now go to that file first.
+- "holi" matched inside "holidays"; one-day holidays showed "25 to 25 December"; "from 1 May" lost its "from". Fixed.
+- The draft note contains the words NEEDS REVIEW, so approve counted it; the note is now skipped (it is removed on copy).
+
+**Still weak**
+- Keyword sorting is rough: some lines will land in the wrong file and must be moved by hand. The drafts are raw
+  lines, not polished text: a person writes the final wording.
+- Conflict checks cover fees, holiday dates and role contacts only; other conflicts (timings, ages) need a careful read.
+- Tables in PDFs lose their column headings; such rows are kept as they are and need checking.
+
 ## Known weaknesses (overall, updated 22 Oct 2026)
 1. **Model quality and quota.** Development uses `gemini-3.5-flash-lite` on the free tier. It is a small model and
    answers vary between runs (see docs/consistency-report.md). The bigger models failed (timeouts) or had a
