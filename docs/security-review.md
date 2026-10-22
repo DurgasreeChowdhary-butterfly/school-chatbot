@@ -14,7 +14,7 @@ and `pip-audit` on the server's packages. Every fix has a test; the test names a
 | CSRF on staff actions | Custom header + SameSite=Strict cookie | Tested, including from an allowed website; form posts no longer crash the error handler |
 | Cookie flags | HttpOnly, SameSite=Strict, Path=/staff, Secure on HTTPS, 8 h | Tested |
 | Security headers | None | nosniff, no framing, Referrer-Policy, Permissions-Policy, HSTS on HTTPS, strict CSP and no-store on staff pages |
-| Login brute force | 5 failures per IP per 15 min | Also 50 failures from all addresses together; password must be at least 12 characters |
+| Login brute force | 5 failures per IP per 15 min | Password must be at least 12 characters; many failures from all addresses slow wrong attempts down (no lockout) and raise an alert |
 | Data leaks (API, logs) | Phones masked in logs; staff data needs login | Tested that names and numbers never reach the log; error replies no longer echo input; API docs off when live |
 | Secrets in the repository or history | — | None found |
 | CORS | Only listed websites | `*` and malformed addresses are refused with a warning; allowed websites still cannot send the staff header |
@@ -71,11 +71,15 @@ New `backend/app/security.py` adds: `X-Content-Type-Options: nosniff`, `X-Frame-
 
 ### 6. Login brute force (fix)
 Already: 5 wrong passwords per IP address in 15 minutes block that address; constant-time comparison.
-- **Fix:** 50 wrong passwords from all addresses together in 15 minutes block all logins for the rest of the window
-  (an attacker with many addresses). Trade-off: such an attack also locks out staff for up to 15 minutes.
+- **Fix (changed 22 Oct, third round):** when wrong passwords from all addresses together reach 50 in 15 minutes
+  (an attacker with many addresses), nobody is locked out. Each further wrong attempt waits 0.5 s longer before its
+  answer (up to 10 s; the wait does not hold a server thread), a "Possible attack on the staff login" line goes to the
+  log (when it starts and every 50 more failures), and a red banner shows on the staff page. The right password still
+  logs in at once. (The first version blocked all logins, which would have let an attacker lock the staff out.)
 - **Fix:** the staff login stays switched off if `ADMIN_PASSWORD` is shorter than 12 characters.
-- **Tests** `test_short_password_switches_login_off`, `test_failures_from_many_addresses_block_all_logins`,
-  `test_old_failures_expire`, plus the existing per-IP test.
+- **Tests** `test_short_password_switches_login_off`, `test_attack_from_many_addresses_does_not_lock_out_the_right_password`,
+  `test_wrong_attempts_during_an_attack_wait_longer_and_longer`, `test_delay_is_capped`, `test_the_real_wait_happens`,
+  `test_attack_banner_on_the_staff_page`, `test_old_failures_expire`, `test_one_address_is_still_blocked_after_five_wrong_passwords`.
 
 ### 7. Leaking other people's data (API and logs)
 - Ticket status needs the reference and the registered mobile; a wrong number and a missing ticket get the same

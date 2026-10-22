@@ -19,6 +19,7 @@
   h1 { margin: 0; font-size: 22px; } h2 { margin: 0 0 2px; font-size: 18px; }
   .demo { background: var(--gold-soft); border: 1px solid var(--gold); border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 700; }
   .banner { background: var(--gold-soft); border: 1px solid var(--gold); border-radius: 10px; padding: 10px 14px; font-size: 13px; margin-bottom: 16px; }
+  .banner.alert { background: var(--bad-soft, #FBE3E1); border-color: var(--bad, #B3261E); }
   .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   button, .btn { font: inherit; font-size: 13px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; cursor: pointer; text-decoration: none; }
   button.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
@@ -52,6 +53,7 @@
       <form method="post" action="/staff/logout"><button type="submit">Log out</button></form>
     </div>
   </header>
+  <div class="banner alert" id="attackBanner" role="alert" hidden></div>
   <div class="banner" id="demoBanner" hidden><b>Demo data.</b> Everything here was created by test chats with a fictional school. Do not contact these numbers.</div>
 
   <section class="panel">
@@ -106,6 +108,9 @@ async function load() {
   const d = await api("/staff/api/data");
   STATUSES = d.statuses;
   $("#demo").hidden = !d.demo; $("#demoBanner").hidden = !d.demo;
+  const a = d.login_alert;
+  $("#attackBanner").hidden = !a;
+  if (a) $("#attackBanner").textContent = `Possible attack on the staff login: ${a.failures} wrong passwords from ${a.addresses} addresses in the last ${a.minutes} minutes. Logins with the right password still work; wrong ones are slowed down. If this continues, tell the person who runs the server.`;
   table("#enquiries", d.enquiries, ["Ref", "Parent", "Child and class", "Mobile", "Visit", "Routed to", "Status", "Logged", "Notes"], e => [
     `<b>${esc(e.ref)}</b>`, esc(e.parent_name), `${esc(e.child_name)} · ${esc(e.class_applying)}`, esc(e.mobile),
     esc(e.visit_preference), esc(e.assigned_to), statusSelect("enquiries", e), when(e.created_at),

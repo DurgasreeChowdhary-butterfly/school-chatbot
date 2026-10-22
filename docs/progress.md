@@ -514,6 +514,21 @@ and 127.0.0.1 as a direct client, and uses `/consent` (rate limited like `/chat`
   password in it; missing or placeholder settings; a temporary refusal, no login offered and a closed port explained;
   plain advice for each kind of error. **Not run against a real mail server** (no SMTP settings in .env, as agreed).
 
+## Third round: retention, reports, rehearsal and guides (22 Oct 2026, no live AI calls)
+
+### 1. Login lockout
+**Built**
+- The global cap that blocked all logins after 50 failures from all addresses is gone (an attacker could have used it
+  to lock the staff out). The per-address limit stays (5 wrong passwords in 15 minutes block that address).
+- Above 50 failures from all addresses in 15 minutes ("possible attack"): each further wrong attempt waits 0.5 s longer
+  before its answer, up to 10 s. The wait is asynchronous, so waiting attackers do not use up the server's threads.
+  The right password is checked first and logs in at once.
+- A "Possible attack on the staff login" warning goes to the log when it starts and every 50 more failures, and a red
+  banner on the staff page says how many failures from how many addresses.
+
+**Tested**: pytest (7 new or rewritten tests, 183 in total): right password works during an attack; waits grow 0.5,
+1.0, 1.5 s; the cap; a real (not faked) wait; the banner data; old failures expire; one address still blocked after 5.
+
 ## Known weaknesses (overall, updated 22 Oct 2026, after the real-content round)
 1. **Model quality and quota.** Development uses `gemini-3.5-flash-lite` on the free tier. It is a small model and
    answers vary between runs (see docs/consistency-report.md). The bigger models failed (timeouts) or had a

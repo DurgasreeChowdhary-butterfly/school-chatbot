@@ -80,19 +80,67 @@ def test_short_password_switches_login_off(client, monkeypatch):
     assert r.status_code == 503 and "at least 12 characters" in r.text
 
 
-def test_failures_from_many_addresses_block_all_logins(client):
+def fake_attack(failures=staff.ATTACK_THRESHOLD, age=0.0):
+    """Wrong passwords from many different addresses (one or two each, so no single address is blocked)."""
     with staff._lock:
-        for n in range(staff.MAX_FAILED_LOGINS_ALL):
-            staff._failed[f"10.0.{n // 250}.{n % 250}"].append(time.time())  # one failure each from 50 addresses
-    r = login(client)  # right password, new address
-    assert r.status_code == 429 and "Too many wrong attempts" in r.text
+        for n in range(failures):
+            staff._failed[f"10.{n // 60000}.{n // 250 % 240}.{n % 250}"].append(time.time() - age)
+
+
+def test_attack_from_many_addresses_does_not_lock_out_the_right_password(client):
+    fake_attack()
+    assert login(client).status_code == 303  # staff can still log in during the attack
+
+
+def test_wrong_attempts_during_an_attack_wait_longer_and_longer(client, monkeypatch, caplog):
+    waits = []
+
+    async def no_real_wait(seconds):
+        waits.append(seconds)
+    monkeypatch.setattr(staff.asyncio, "sleep", no_real_wait)
+    assert login(client, "wrong-guess").status_code == 401
+    assert waits == []                                   # calm: no waiting
+    staff.reset_state()
+    fake_attack(staff.ATTACK_THRESHOLD - 1)              # one more wrong password makes it a possible attack
+    with caplog.at_level(logging.WARNING, logger="chatbot.staff"):
+        codes = [login(client, "wrong-guess").status_code for _ in range(3)]
+    assert codes == [401, 401, 401]
+    assert waits == [0.5, 1.0, 1.5]                      # 0.5 s more for each failure over the threshold
+    attack_lines = [r.message for r in caplog.records if "Possible attack" in r.message]
+    assert len(attack_lines) == 1 and "slowed down" in attack_lines[0]  # logged once, not for every attempt
+
+
+def test_delay_is_capped(client, monkeypatch):
+    waits = []
+
+    async def no_real_wait(seconds):
+        waits.append(seconds)
+    monkeypatch.setattr(staff.asyncio, "sleep", no_real_wait)
+    fake_attack(staff.ATTACK_THRESHOLD + 500)
+    login(client, "wrong-guess")
+    assert waits == [staff.ATTACK_DELAY_MAX]
+
+
+def test_attack_banner_on_the_staff_page(client):
+    login(client)
+    assert client.get("/staff/api/data").json()["login_alert"] is None
+    fake_attack()
+    alert = client.get("/staff/api/data").json()["login_alert"]
+    assert alert["failures"] == staff.ATTACK_THRESHOLD and alert["addresses"] == staff.ATTACK_THRESHOLD
+    page = (security.PAGES / "staff.html").read_text(encoding="utf-8")
+    assert 'id="attackBanner"' in page and "Possible attack on the staff login" in page
 
 
 def test_old_failures_expire(client):
-    with staff._lock:
-        for n in range(staff.MAX_FAILED_LOGINS_ALL):
-            staff._failed[f"10.1.0.{n}"].append(time.time() - staff.FAILED_LOGIN_WINDOW - 1)
+    fake_attack(age=staff.FAILED_LOGIN_WINDOW + 1)
+    assert staff.login_alert() is None
     assert login(client).status_code == 303
+
+
+def test_one_address_is_still_blocked_after_five_wrong_passwords(client):
+    for _ in range(staff.MAX_FAILED_LOGINS):
+        login(client, "wrong-guess")
+    assert login(client).status_code == 429  # even the right password, from that address
 
 
 # ---------- SQL injection ----------
@@ -223,3 +271,11 @@ def test_database_file_has_no_secrets():
         for table in tables:
             columns = [r[1] for r in conn.execute(f"PRAGMA table_info({table})")]
             assert not any(c in ("password", "api_key", "token") for c in columns), table
+
+
+def test_the_real_wait_happens(client, monkeypatch):
+    monkeypatch.setattr(staff, "ATTACK_DELAY_STEP", 0.2)
+    fake_attack(staff.ATTACK_THRESHOLD - 1)
+    started = time.time()
+    assert login(client, "wrong-guess").status_code == 401
+    assert time.time() - started >= 0.2

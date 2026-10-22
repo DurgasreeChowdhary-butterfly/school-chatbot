@@ -1,5 +1,6 @@
 """Staff page at /staff: login with ADMIN_PASSWORD, see enquiries, tickets, callbacks and the outbox,
 change statuses, resend emails, export CSV, and run the reminder job by hand."""
+import asyncio
 import csv
 import hmac
 import io
@@ -25,7 +26,11 @@ COOKIE = "staff_session"
 SESSION_SECONDS = 8 * 60 * 60          # staff stay logged in for 8 hours
 MAX_FAILED_LOGINS = 5                   # per IP address ...
 FAILED_LOGIN_WINDOW = 15 * 60           # ... in 15 minutes
-MAX_FAILED_LOGINS_ALL = 50              # from all addresses together in 15 minutes (attacks from many addresses)
+# Failures from all addresses together in 15 minutes above which we treat it as a possible attack. Nobody is locked
+# out (that would let an attacker lock out the staff): each further wrong attempt just waits longer before its answer.
+ATTACK_THRESHOLD = 50
+ATTACK_DELAY_STEP = 0.5                 # seconds added per wrong attempt over the threshold ...
+ATTACK_DELAY_MAX = 10.0                 # ... up to this
 MIN_PASSWORD_LENGTH = 12
 
 STATUSES = {
@@ -37,6 +42,7 @@ EXPORTS = {"enquiries", "tickets", "callbacks", "outbox"}
 
 _tokens: dict[str, float] = {}          # login token -> expiry time
 _failed: dict[str, deque] = defaultdict(deque)  # IP -> times of failed logins
+_attack = {"since": 0.0, "logged_at": 0}  # when the current possible attack started, failures count when last logged
 _lock = threading.Lock()
 
 
@@ -45,6 +51,7 @@ def reset_state() -> None:
     with _lock:
         _tokens.clear()
         _failed.clear()
+        _attack.update(since=0.0, logged_at=0)
 
 
 def _admin_password() -> str:
@@ -78,14 +85,52 @@ def _require_same_site_request(request: Request) -> None:
         raise HTTPException(status_code=403, detail="Missing request header.")
 
 
-def _too_many_failures(ip: str) -> bool:
+def _forget_old_failures() -> None:
     cutoff = time.time() - FAILED_LOGIN_WINDOW
+    for ip in list(_failed):
+        attempts = _failed[ip]
+        while attempts and attempts[0] < cutoff:
+            attempts.popleft()
+        if not attempts:
+            del _failed[ip]
+
+
+def _too_many_failures(ip: str) -> bool:
+    """Only this address is blocked (5 wrong passwords in 15 minutes)."""
     with _lock:
-        for attempts in list(_failed.values()):
-            while attempts and attempts[0] < cutoff:
-                attempts.popleft()
-        everyone = sum(len(a) for a in _failed.values())
-        return len(_failed[ip]) >= MAX_FAILED_LOGINS or everyone >= MAX_FAILED_LOGINS_ALL
+        _forget_old_failures()
+        return len(_failed.get(ip, ())) >= MAX_FAILED_LOGINS
+
+
+def login_alert() -> dict | None:
+    """A possible attack: many wrong passwords from all addresses together in the last 15 minutes. None if calm."""
+    with _lock:
+        _forget_old_failures()
+        total = sum(len(a) for a in _failed.values())
+        if total < ATTACK_THRESHOLD:
+            _attack.update(since=0.0, logged_at=0)
+            return None
+        return {"failures": total, "addresses": len(_failed), "since": _attack["since"] or time.time(),
+                "minutes": FAILED_LOGIN_WINDOW // 60}
+
+
+def _record_failure(ip: str) -> float:
+    """Remember a wrong password. Returns how long to wait before answering (0 unless under a possible attack)."""
+    with _lock:
+        _failed[ip].append(time.time())
+    alert = login_alert()
+    if not alert:
+        return 0.0
+    with _lock:
+        if not _attack["since"]:
+            _attack["since"] = time.time()
+        # Log when it starts, then every 50 more failures (not every attempt, so the log stays readable).
+        if alert["failures"] - _attack["logged_at"] >= 50 or not _attack["logged_at"]:
+            _attack["logged_at"] = alert["failures"]
+            log.warning("Possible attack on the staff login: %s wrong passwords from %s addresses in %s minutes; "
+                        "wrong attempts are being slowed down", alert["failures"], alert["addresses"], alert["minutes"])
+    excess = alert["failures"] - ATTACK_THRESHOLD + 1
+    return min(ATTACK_DELAY_MAX, ATTACK_DELAY_STEP * excess)
 
 
 def _login_page(message: str = "", status_code: int = 200) -> HTMLResponse:
@@ -106,7 +151,7 @@ def staff_page(request: Request):
 
 
 @router.post("/staff/login", include_in_schema=False)
-def login(request: Request, password: str = Form("")):
+async def login(request: Request, password: str = Form("")):
     ip = _client_ip(request)
     expected = _admin_password()
     if not expected:
@@ -115,9 +160,10 @@ def login(request: Request, password: str = Form("")):
         log.warning("Staff login blocked for %s: too many failed attempts", ip)
         return _login_page("Too many wrong attempts. Please wait 15 minutes and try again.", 429)
     if not hmac.compare_digest(password.encode("utf-8"), expected.encode("utf-8")):
-        with _lock:
-            _failed[ip].append(time.time())
+        delay = _record_failure(ip)
         log.warning("Staff login failed from %s", ip)
+        if delay:
+            await asyncio.sleep(delay)  # waits without holding a server thread
         return _login_page("Wrong password.", 401)
 
     token = secrets.token_urlsafe(32)
@@ -154,6 +200,7 @@ def staff_data(request: Request):
         "outbox": db.list_rows("outbox")[:300],
         "email_on": notify.smtp_configured(),
         "test_mode": notify.test_mode(),
+        "login_alert": login_alert(),
     }
 
 
