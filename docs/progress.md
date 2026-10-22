@@ -514,7 +514,7 @@ and 127.0.0.1 as a direct client, and uses `/consent` (rate limited like `/chat`
   password in it; missing or placeholder settings; a temporary refusal, no login offered and a closed port explained;
   plain advice for each kind of error. **Not run against a real mail server** (no SMTP settings in .env, as agreed).
 
-## Known weaknesses (overall, updated 22 Oct 2026)
+## Known weaknesses (overall, updated 22 Oct 2026, after the real-content round)
 1. **Model quality and quota.** Development uses `gemini-3.5-flash-lite` on the free tier. It is a small model and
    answers vary between runs (see docs/consistency-report.md). The bigger models failed (timeouts) or had a
    20-requests-per-day free quota. A paid tier is needed before real use, and real parent or child data must never
@@ -533,4 +533,9 @@ and 127.0.0.1 as a direct client, and uses `/consent` (rate limited like `/chat`
 10. **Automatic answer checks look for key facts and phrases** (docs/test-checks.json); they can pass a clumsy answer
     or fail an unusual correct one, and must be updated with the real content. A person should still read answers.
 11. **Browser support** was tested in headless Chromium and Chrome on Windows (desktop and phone size), not Safari/Firefox or a real phone.
-12. **Not deployed.** The Docker image was not built here (Docker Desktop was not running); follow docs/deploy.md on a test machine first.
+12. **Not deployed.** The Docker image was never built here (Docker Desktop was not running); follow docs/deploy.md on a test machine first.
+13. **Records are never deleted.** The privacy notice says 12 months; a nightly clean-up is still needed (docs/security-review.md).
+14. **Package versions are not pinned**; pin them before deploying and re-run `pip-audit` monthly.
+15. **Simulated users: only 1 of 10 planned runs per scenario** before the free quota ran out (all passed).
+16. **Document ingestion sorts lines by keywords**; drafts need a careful human edit, and conflicts are only checked
+    for fees, holiday dates and role contacts.
