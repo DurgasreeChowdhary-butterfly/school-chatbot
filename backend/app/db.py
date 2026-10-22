@@ -1,4 +1,4 @@
-"""SQLite storage for enquiries, tickets, callback requests and the notification outbox.
+"""SQLite storage for enquiries, tickets, callback requests, the notification outbox and chat sessions.
 Uses Python's built-in sqlite3. The database file is data/chatbot.db unless DB_PATH is set."""
 import os
 import sqlite3
@@ -73,6 +73,15 @@ CREATE TABLE IF NOT EXISTS outbox (
     status TEXT NOT NULL,
     created_at TEXT NOT NULL,
     error TEXT DEFAULT ''
+);
+CREATE TABLE IF NOT EXISTS chat_sessions (
+    id TEXT PRIMARY KEY,
+    history TEXT NOT NULL,
+    turn INTEGER NOT NULL DEFAULT 0,
+    pending_enquiry TEXT,
+    failed_lookups INTEGER NOT NULL DEFAULT 0,
+    consent_at TEXT,
+    last_seen REAL NOT NULL
 );
 """
 

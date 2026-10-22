@@ -174,6 +174,7 @@ def consent(req: ConsentRequest, request: Request):
         return blocked
     session = sessions.get_session(req.session_id)
     session.consent_at = db.now() if req.agree else None
+    sessions.save(session)
     return {"ok": True, "consent": req.agree}
 
 
@@ -192,6 +193,9 @@ def chat(req: ChatRequest, request: Request):
         log.exception("Could not create the AI provider")
         return ChatResponse(reply=FALLBACK_REPLY, demo=config.DEMO_MODE)
 
-    outcome = handle_message(p, session, req.campus, knowledge, req.message, req.group)
+    try:
+        outcome = handle_message(p, session, req.campus, knowledge, req.message, req.group)
+    finally:
+        sessions.save(session)  # stored in SQLite, so a restart keeps the conversation
     notice = privacy_notice(req.campus) if outcome.action == "consent" else None
     return ChatResponse(reply=outcome.reply, demo=config.DEMO_MODE, action=outcome.action, notice=notice)

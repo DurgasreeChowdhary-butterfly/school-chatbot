@@ -196,6 +196,22 @@ _In progress: see docs/consistency-report.md when the three live runs are finish
 **Tested**
 - Dry run with `LLM_PROVIDER=fake` (two made-up model names, two questions): table printed, no API calls.
 
+### 3. Persistence
+**Built**
+- Chat sessions are stored in SQLite (new table `chat_sessions`): the visible conversation, consent time, the enquiry
+  waiting for "yes", the turn counter and failed ticket lookups. Each request loads its session and saves it afterwards
+  (also when the AI fails), so a restart in the middle of a conversation loses nothing.
+- Sessions idle for 2 hours are deleted from the database, as before (they can contain names and mobile numbers).
+
+**Tested**
+- pytest (6 new tests, 85 in total): the app is stopped and started again mid-conversation, with nothing kept in memory.
+  The conversation continues, consent is still given, a pending enquiry can be confirmed with "yes" after the restart,
+  the summary and "yes" still need separate turns, the 5-failed-lookups limit is not reset, idle sessions are deleted.
+
+**Still weak**
+- Staff logins and rate limits are still in memory (a restart logs staff out and resets the limits).
+- Two messages from the same chat at exactly the same moment: the later save wins (the chat window sends one at a time).
+
 ## Known weaknesses (overall)
 1. **Model quality and quota.** Development uses `gemini-3.5-flash-lite` on the free tier. It is a small model; the rules
    needed several rounds, and answers can vary from run to run. The bigger models failed (timeouts) or had a
