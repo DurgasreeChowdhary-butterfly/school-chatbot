@@ -8,7 +8,8 @@ Usage (server must be running, with the live model):
 
 Each question gets a new session. Calls are spaced out for free-tier rate limits,
 and a fallback ("I'm having trouble") reply is retried with backoff.
-The answers are saved to a JSON file; a person judges them against the "expected" column."""
+The answers are saved to a JSON file and checked automatically (scripts/grade_answers.py, docs/test-checks.json);
+a person should still read them against the "expected" column now and then."""
 import argparse
 import csv
 import json
@@ -73,6 +74,13 @@ def main() -> None:
             print("Stopping: 3 failed replies in a row (probably the daily quota). Check the server log.")
             break
     print(f"Saved {len(results)} answers to {out}")
+    if args.file == "docs/test-questions.csv":
+        from grade_answers import grade_run
+        graded = grade_run(results)
+        print(f"Automatic checks: {sum(v == 'pass' for v, _ in graded.values())} of {len(results)} pass")
+        for qid, (verdict, reasons) in graded.items():
+            if verdict != "pass":
+                print(f"   [{qid}] {verdict}: {'; '.join(reasons)}")
 
 
 if __name__ == "__main__":

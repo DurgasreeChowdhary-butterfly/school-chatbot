@@ -27,3 +27,5 @@
 | 21 Oct 2026 | Session ids must be 16-100 characters (letters, digits, - and _) | Claude (agent) | Makes another person's chat session impossible to guess |
 | 21 Oct 2026 | Phone numbers are masked in every log line by a logging filter; message text is never logged | Claude (agent) | CLAUDE.md privacy rules |
 | 21 Oct 2026 | CORS: only websites in ALLOWED_ORIGINS; empty = same server only | Claude (agent) | Add the school website before embedding |
+| 22 Oct 2026 | Temperature is a setting (LLM_TEMPERATURE), left at the model default | Claude (agent) | Google's docs: "For all Gemini 3 models, we strongly recommend keeping the temperature parameter at its default value of 1.0"; lower values "may lead to unexpected behavior, such as looping". Gemini 3.6+ ignores it. Measured in docs/consistency-report.md |
+| 22 Oct 2026 | Answer-quality runs are checked automatically (docs/test-checks.json, scripts/grade_answers.py) | Claude (agent) | Needed to compare runs and models. Checks match the dummy facts; update them with the real content. A person still reads answers now and then |

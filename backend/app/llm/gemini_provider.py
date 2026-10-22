@@ -17,7 +17,7 @@ RETRY_DELAYS = [2, 6]  # seconds to wait before the 2nd and 3rd attempt
 
 
 class GeminiProvider(LLMProvider):
-    def __init__(self, api_key: str, model: str, timeout_seconds: int = 30):
+    def __init__(self, api_key: str, model: str, timeout_seconds: int = 30, temperature: float | None = None):
         if not api_key:
             raise ValueError("GEMINI_API_KEY is empty in .env")
         if not model:
@@ -28,6 +28,9 @@ class GeminiProvider(LLMProvider):
             http_options=types.HttpOptions(timeout=timeout_seconds * 1000),
         )
         self._model = model
+        # None = the model's default. Google strongly recommends the default (1.0) for Gemini 3 models
+        # and says lower values may cause looping; Gemini 3.6+ ignores it. See docs/decisions.md.
+        self._temperature = temperature
 
     def generate(
         self,
@@ -37,6 +40,7 @@ class GeminiProvider(LLMProvider):
     ) -> LLMResult:
         config = types.GenerateContentConfig(
             system_instruction=system_prompt,
+            temperature=self._temperature,
             tools=_to_gemini_tools(tools),
             # We run tools ourselves, so switch off the SDK's automatic function calling.
             automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
@@ -56,7 +60,8 @@ class GeminiProvider(LLMProvider):
                     log.warning("Gemini error %s, retrying in %ss", e.code, RETRY_DELAYS[attempt])
                     time.sleep(RETRY_DELAYS[attempt])
                     continue
-                return LLMResult(failed=True, error=f"Gemini API error {e.code}: {e.message}")
+                note = " (daily quota used up)" if daily_quota else ""
+                return LLMResult(failed=True, error=f"Gemini API error {e.code}{note}: {e.message}")
             except Exception as e:  # timeouts, network errors
                 return LLMResult(failed=True, error=f"Gemini request failed: {e!r}")
         return LLMResult(failed=True, error="Gemini: retries used up")
