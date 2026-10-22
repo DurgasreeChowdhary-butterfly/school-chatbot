@@ -169,15 +169,34 @@ docker compose cp chatbot:/app/data/backups ./backups-copy
 then move `backups-copy` to the school's protected storage. Backups contain parents' names and mobile numbers: only
 authorised staff may have access, and copies older than the privacy notice allows (12 months) must be deleted.
 
-**Restore** (only if the database is lost or damaged):
+**Restore** (only if the database is lost or damaged). In plain words: stop the chatbot, put the backup back with
+the restore script (it checks the backup first and keeps the current database, so you can undo), start the chatbot.
 
-```bash
-docker compose stop chatbot
-docker compose cp ./backups-copy/chatbot-20261101-023000.db chatbot:/app/data/chatbot.db
-docker compose start chatbot
-```
+1. See which backups exist (newest last):
+   ```bash
+   docker compose exec chatbot ls /app/data/backups
+   ```
+   If the backup you want is a copy you kept off the server, put it back first:
+   `docker compose cp ./backups-copy/chatbot-20261101-023000.db chatbot:/app/data/backups/`
+2. Stop the chatbot (Caddy can keep running; visitors see an error for a minute):
+   ```bash
+   docker compose stop chatbot
+   ```
+3. Restore. `run --rm` starts a one-off copy of the chatbot container with the same data, just for this command:
+   ```bash
+   docker compose run --rm chatbot python scripts/restore_db.py /app/data/backups/chatbot-20261101-023000.db
+   ```
+   It shows how many enquiries, tickets and callbacks the backup holds and asks you to type YES. The old database is
+   kept as `chatbot.before-restore-<date-time>.db` next to it.
+4. Start the chatbot again and check:
+   ```bash
+   docker compose start chatbot
+   ```
+   Open `/health` (must say `"database":"ok"`) and the staff page (the enquiries and tickets from the backup date).
+   Anything that came in after the backup was made is not there: ask the front office to check emails from that time.
 
-Then check `/health` and the staff page.
+Without Docker (Windows): stop the server (Ctrl+C), run
+`python scripts/restore_db.py data/backups/chatbot-20261101-023000.db`, type YES, start the server again.
 
 ## 9. Changing content or code later
 

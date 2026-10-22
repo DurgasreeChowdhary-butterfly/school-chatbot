@@ -591,6 +591,20 @@ invalid number refused); the whole flow in a real browser.
 - Hindi/Telugu in photos is not read (Windows OCR uses English here). Non-fee table columns in PDFs lose their headings.
 - No real photo from the school was available to try.
 
+### 5. Backup and restore
+**Built**
+- `scripts/restore_db.py`: checks the backup is a complete, undamaged chatbot database (and says plainly if not), shows
+  how many records it holds, asks for YES (or `--yes`), keeps the current database as
+  `<name>.before-restore-<date-time>.db`, then copies the backup into place with SQLite's own copy.
+- docs/deploy.md: restore steps in plain language, with Docker (`docker compose run --rm ... restore_db.py`) and without.
+
+**Tested**
+- By hand (22 Oct): filled a database, `backup_db.py`, `restore_db.py` into a fresh folder, then started a server on
+  each and logged in to the staff page: enquiries E-1001 to E-1003, ticket T-1001 (In progress) and callback C-1001
+  are identical on both.
+- pytest (3 new tests, 205 in total): the same end to end with two real servers; the old database is kept; damaged,
+  wrong and missing files are refused; nothing changes without YES.
+
 ## Known weaknesses (overall, updated 22 Oct 2026, after the real-content round)
 1. **Model quality and quota.** Development uses `gemini-3.5-flash-lite` on the free tier. It is a small model and
    answers vary between runs (see docs/consistency-report.md). The bigger models failed (timeouts) or had a
