@@ -102,8 +102,8 @@ TICKET = {
 ASKS = {
     "confirm": re.compile(r"shall i send|confirm|is (this|everything|that) (correct|right)|look(s)? (correct|right|good)|"
                           r"should i (send|submit|go ahead)|proceed|send this|submit", re.I),
-    "log": re.compile(r"(would|shall|do) you (like|want) me to (log|raise|record|pass)|shall i (log|raise)|"
-                      r"like me to log|want me to log|log (this|it|a concern|a ticket)\?", re.I),
+    "log": re.compile(r"(would|shall|do) you (like|want)( me)? to (log|raise|record|pass)|shall i (log|raise)|"
+                      r"\b(log|raise|record)\b[^.?!]*\?", re.I),
     "mobile": re.compile(r"mobile|phone|contact number|\bnumber\b", re.I),
     "names": re.compile(r"\bname", re.I),
     "cls": re.compile(r"\bclass\b|\bgrade\b", re.I),
@@ -342,6 +342,8 @@ def simulate(runs: int, only: list[str] | None, gap: float) -> str:
 
     app_main.set_provider(QuotaWatch())
     results = json.loads(PATHS["results"].read_text(encoding="utf-8")) if PATHS["results"].exists() else []
+    # Runs that ended in an error (network down, model busy) are tried again; passes and fails are kept.
+    results = [r for r in results if r["status"] != "error"]
     done = {(r["flow"], r["scenario"], r["run"]) for r in results}
     todo = [p for p in plan(runs, only) if p not in done]
     tmp = Path(tempfile.mkdtemp(prefix="simulate-"))
@@ -379,7 +381,14 @@ def simulate(runs: int, only: list[str] | None, gap: float) -> str:
     return stopped
 
 
-def write_report(stopped: str, runs: int) -> None:
+def write_report(stopped: str, runs: int, report_only: bool = False) -> None:
+    stop_file = PATHS["results"].parent / "stopped.txt"  # remembers where a run stopped, until a run finishes
+    if report_only and stop_file.exists():
+        stopped = stop_file.read_text(encoding="utf-8").strip()
+    elif stopped:
+        stop_file.write_text(stopped + "\n", encoding="utf-8")
+    elif stop_file.exists():
+        stop_file.unlink()
     results = json.loads(PATHS["results"].read_text(encoding="utf-8")) if PATHS["results"].exists() else []
     rows, failures = [], []
     for flow, scenarios in (("enquiry", ENQUIRY), ("ticket", TICKET)):
@@ -407,6 +416,9 @@ def write_report(stopped: str, runs: int) -> None:
             out.append(f"  - **User:** {you}")
             out.append(f"    **Bot:** {bot[:300].replace(chr(10), ' ')}")
         out.append("")
+    notes = PATHS["results"].parent / "notes.md"  # what failed earlier and how it was fixed, kept by hand
+    if notes.exists():
+        out += ["", notes.read_text(encoding="utf-8").strip()]
     PATHS["report"].write_text("\n".join(out) + "\n", encoding="utf-8", newline="\n")
 
 
@@ -420,8 +432,10 @@ def main() -> int:
     parser.add_argument("--report", default=str(REPORT))
     args = parser.parse_args()
     PATHS.update(results=Path(args.results), report=Path(args.report))
+    from dotenv import load_dotenv
+    load_dotenv(ROOT / ".env")
     stopped = "" if args.report_only else simulate(args.runs, args.only, args.gap)
-    write_report(stopped, args.runs)
+    write_report(stopped, args.runs, args.report_only)
     print(f"Report: {PATHS['report']}")
     return 0
 

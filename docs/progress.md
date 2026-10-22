@@ -442,6 +442,20 @@
   not appear in what the person typed in this chat, and tells the model to ask for it. The simulator now checks this too.
 - Tests: the shared test helper now puts the details in the visitor's message (as a real visitor would); 4 new tests
   for the check (169 in total).
+- First real attempt: the new check refused "Saturday morning" when the visitor typed "satrday mornig", and the model
+  looped asking for a date. Fixed: small spelling differences are accepted (1 more test). A network drop gave 1 error.
+- Simulator gaps (not chatbot failures), fixed in the simulator and rerun: it did not recognise "Would you like to log
+  this...?" without "me"; runs that ended in an error are now retried on the next run.
+
+**Tested (live, 22 Oct 2026)**: pilot 17 of 17; final run 15 of 15 passed (run 1 of 15 scenarios) before the
+**daily free-tier quota ran out** (stopped before ticket:skip_consent run 1). Not yet run: ticket:skip_consent and
+ticket:lookup_wrong_number (both passed in the pilot), and runs 2 to 10 of every scenario (153 conversations).
+Carry on after midnight Pacific time with `python scripts/simulate_users.py` (it continues where it stopped; about
+170 conversations need roughly 2 to 3 days of free quota). Report: `docs/simulation-report.md`.
+
+**Still weak**
+- Only 1 run per scenario so far: rare slips will not show until the remaining runs are done.
+- Scripted users follow a pattern; real parents are more varied. The checks look at what was saved, not the tone.
 
 ### 4. Security review
 Full details: `docs/security-review.md`.
