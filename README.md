@@ -54,7 +54,8 @@ School name, campuses and menu buttons come from `kb/school.json`.
 - Concerns: tickets routed by category, urgent handling for safety, status lookup with reference + registered mobile.
 - "Talk to a person": callback requests for the front office.
 - Notifications go to the `outbox` table and the server log, and are emailed when `SMTP_HOST` is set in .env.
-  Urgent (safety) emails go first; failed emails are retried every minute or so (up to 5 tries) and can be resent
+  Check the email settings first with `python scripts/send_test_email.py` (one email to `TEST_RECIPIENT`; any problem
+  is explained in plain words). Urgent (safety) emails go first; failed emails are retried every minute or so (up to 5 tries) and can be resent
   from the staff page. `TEST_MODE=true` (the default) sends every email to `TEST_RECIPIENT` only, and nothing is
   ever sent to an example.com address.
 - A reminder job (every 15 minutes) reminds and escalates enquiries and tickets after the working-day deadlines in

@@ -57,7 +57,7 @@ Fill in these values. Keep `.env` private: only the person running the server sh
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURITY` | from the email provider, e.g. `smtp.gmail.com`, `587`, `starttls` | Empty `SMTP_HOST` = no email, outbox only |
 | `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | the sending mailbox and its (app) password | Use a dedicated mailbox, e.g. chatbot@yourschool.in |
 | `TEST_MODE` | `true` at first, `false` when the school approves real sending | `true` sends every email to `TEST_RECIPIENT` only |
-| `TEST_RECIPIENT` | your own email address | Used while `TEST_MODE=true` |
+| `TEST_RECIPIENT` | your own email address | Used while `TEST_MODE=true`. Check email with `docker compose exec chatbot python scripts/send_test_email.py` |
 | `COUNSELLOR_EMAIL_PILOT` | optional | Overrides the counsellor email in routing.json |
 | `CHAT_LIMIT_PER_SESSION`, `CHAT_LIMIT_PER_IP`, `HISTORY_LIMIT` | leave the defaults (12, 40, 20) | Raise the IP limit if many parents share one school network |
 

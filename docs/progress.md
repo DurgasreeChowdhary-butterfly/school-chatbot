@@ -487,6 +487,19 @@ and 127.0.0.1 as a direct client, and uses `/consent` (rate limited like `/chat`
 (172.30.0.2) on a private network and sets `FORWARDED_ALLOW_IPS` to it; the image's default trusts only 127.0.0.1.
 `docker compose config` accepts the file. 3 new tests (172 in total).
 
+### 6. Test email
+**Built**
+- `scripts/send_test_email.py`: sends one email through the SMTP settings in .env to `TEST_RECIPIENT`, using the same
+  code as the outbox. Refuses placeholder addresses and missing settings, and explains failures in plain words: server
+  name not found, cannot connect (port or firewall), wrong password (app passwords for Gmail/Microsoft 365), security
+  setting not matching the port, server offers no login, sender or recipient refused, server closed the connection,
+  temporary (4xx) and permanent (5xx) refusals.
+
+**Tested**
+- pytest with the fake SMTP server only (4 new tests, 176 in total): one email sent with the right subject and no
+  password in it; missing or placeholder settings; a temporary refusal, no login offered and a closed port explained;
+  plain advice for each kind of error. **Not run against a real mail server** (no SMTP settings in .env, as agreed).
+
 ## Known weaknesses (overall, updated 22 Oct 2026)
 1. **Model quality and quota.** Development uses `gemini-3.5-flash-lite` on the free tier. It is a small model and
    answers vary between runs (see docs/consistency-report.md). The bigger models failed (timeouts) or had a
