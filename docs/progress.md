@@ -471,8 +471,9 @@ unpinned package versions, logins and limits in memory.
 ### 5. Docker
 **Skipped:** Docker is installed but Docker Desktop was not running (checked twice on 22 Oct), so the image was not built
 and docker compose was not run. To do it yourself: start Docker Desktop, then
-`$env:CHATBOT_DOMAIN="localhost"; docker compose up -d --build`, open http://localhost/health (Caddy serves plain http
-for "localhost"-style test hosts only if told to; see docs/deploy.md), and run the checks below.
+`$env:CHATBOT_DOMAIN="http://localhost"; docker compose up -d --build` (the `http://` makes Caddy serve plain HTTP, no
+certificate), then open http://localhost/health, ask a question on http://localhost/demo, and run
+`curl.exe -H "X-Forwarded-For: 1.2.3.4" ...` style requests to see the limit hold.
 
 **Tested without Docker (the part that matters for the rate limit):** `tests/test_proxy_headers.py` starts uvicorn
 exactly as the image does (`--proxy-headers`, trusted proxy from `FORWARDED_ALLOW_IPS`), with 127.0.0.2 as the proxy
