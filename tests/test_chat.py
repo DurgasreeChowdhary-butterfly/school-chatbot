@@ -9,7 +9,14 @@ from tests.conftest import chat
 
 
 def test_health(client):
-    assert client.get("/health").json() == {"status": "ok", "demo": True}
+    assert client.get("/health").json() == {"status": "ok", "demo": True, "database": "ok"}
+
+
+def test_health_reports_a_broken_database(client, monkeypatch, tmp_path):
+    from backend.app import db
+    monkeypatch.setattr(db, "DB_PATH", tmp_path / "missing-folder" / "chatbot.db")
+    r = client.get("/health")
+    assert r.status_code == 503 and r.json()["database"] == "error"
 
 
 def test_widget_config_and_files(client):

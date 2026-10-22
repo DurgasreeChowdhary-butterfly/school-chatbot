@@ -274,6 +274,24 @@ _In progress: see docs/consistency-report.md when the three live runs are finish
 - It checks structure and leftovers, not whether the facts are right. The school must still approve every file, and
   `docs/test-checks.json` must be updated with the real facts before the answer-quality test means anything.
 
+### 7. Deploy package
+**Built**
+- `Dockerfile` (Python 3.12 slim, runs as a normal user, one worker, Docker health check on `/health`,
+  proxy headers so rate limits see the visitor's IP behind Caddy) and `.dockerignore` (never copies `.env`, data or tests).
+- `docker-compose.yml`: the chatbot (not open to the internet) and Caddy 2.8.4 (ports 80/443, automatic HTTPS from
+  `CHATBOT_DOMAIN`, config in `deploy/Caddyfile`). The database is in a named volume; `kb/` and `config/` are mounted
+  read-only so content changes need only a restart.
+- `/health` now also checks the database can be read (503 and `"database": "error"` if not).
+- `scripts/backup_db.py`: safe copy while running (SQLite backup), integrity check, keeps the newest 30.
+- `docs/deploy.md`: step by step for a beginner: what you need, .env table, HTTPS, start, health checks, adding the
+  script tag and ALLOWED_ORIGINS, nightly backups, off-server copies, restore, updates, go-live checklist, troubleshooting.
+
+**Tested**
+- pytest (2 new tests, 120 in total): broken database gives 503; backup copy is readable and old copies are pruned.
+- `docker compose config` accepts the compose file (and refuses to start without `CHATBOT_DOMAIN`).
+- **Not tested:** building and running the image. Docker is installed but Docker Desktop was not running, and starting
+  it was left to you. Run `docker compose up -d --build` once on a test machine before the real server.
+
 ## Known weaknesses (overall)
 1. **Model quality and quota.** Development uses `gemini-3.5-flash-lite` on the free tier. It is a small model; the rules
    needed several rounds, and answers can vary from run to run. The bigger models failed (timeouts) or had a

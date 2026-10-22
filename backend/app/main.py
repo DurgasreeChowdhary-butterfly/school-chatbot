@@ -145,8 +145,14 @@ def _too_fast(request: Request, session_id: str) -> JSONResponse | None:
 
 @app.get("/health")
 def health():
-    """Quick check that the server is running."""
-    return {"status": "ok", "demo": config.DEMO_MODE}
+    """Quick check that the server is running and can read its database (503 if not)."""
+    try:
+        with db.connect() as conn:
+            conn.execute("SELECT 1 FROM outbox LIMIT 1")
+    except Exception:
+        log.exception("Health check: database not readable")
+        return JSONResponse({"status": "error", "demo": config.DEMO_MODE, "database": "error"}, status_code=503)
+    return {"status": "ok", "demo": config.DEMO_MODE, "database": "ok"}
 
 
 @app.get("/demo", include_in_schema=False)

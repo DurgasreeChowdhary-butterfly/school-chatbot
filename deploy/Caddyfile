@@ -1,0 +1,6 @@
+# Caddy gets and renews a free HTTPS certificate for CHATBOT_DOMAIN automatically (Let's Encrypt),
+# and passes every request to the chatbot. The domain's DNS must point at this server first.
+{$CHATBOT_DOMAIN} {
+	encode gzip
+	reverse_proxy chatbot:8000
+}

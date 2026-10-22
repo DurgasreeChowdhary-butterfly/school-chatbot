@@ -1,0 +1,37 @@
+# School chatbot + Caddy (automatic HTTPS). See docs/deploy.md for every step.
+#   docker compose up -d --build     start (or update after changing code)
+#   docker compose ps                 both services should say "running" and the chatbot "(healthy)"
+#   docker compose logs -f chatbot    see the server log
+services:
+  chatbot:
+    build: .
+    env_file: .env
+    environment:
+      DB_PATH: /app/data/chatbot.db
+    volumes:
+      - chatbot-data:/app/data          # the database and its backups; survives rebuilds
+      - ./kb:/app/kb:ro                 # school content: replace files, then: docker compose restart chatbot
+      - ./config:/app/config:ro
+    expose:
+      - "8000"                          # only Caddy can reach the app; it is not open to the internet directly
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2.8.4
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      CHATBOT_DOMAIN: ${CHATBOT_DOMAIN:?Set CHATBOT_DOMAIN in .env, for example chat.yourschool.in}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data                # HTTPS certificates
+      - caddy-config:/config
+    depends_on:
+      - chatbot
+    restart: unless-stopped
+
+volumes:
+  chatbot-data:
+  caddy-data:
+  caddy-config:

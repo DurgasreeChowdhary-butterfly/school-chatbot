@@ -34,6 +34,10 @@ $body = @{ session_id = "test-session-0001"; message = "What is the minimum age 
 Invoke-RestMethod -Uri http://127.0.0.1:8000/chat -Method Post -ContentType "application/json" -Body $body
 ```
 
+## Deploy
+See `docs/deploy.md`: Docker (`Dockerfile`, `docker-compose.yml`) with Caddy for automatic HTTPS, environment
+variables, backups (`scripts/backup_db.py`), adding the chat to the website, and health checks.
+
 ## Chat window on a website
 Put one line before `</body>` on the school website:
 ```html
