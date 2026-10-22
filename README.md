@@ -11,7 +11,7 @@ docs/, scripts/ (live test helpers), tests/ (automated tests).
 ```powershell
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -r requirements-dev.txt
+pip install -r requirements.lock.txt -r requirements-dev.txt   # exact server versions + test tools
 python -m playwright install chromium      # only needed for the browser tests
 Copy-Item .env.example .env                # then fill in GEMINI_API_KEY, MODEL_NAME and ADMIN_PASSWORD
 ```

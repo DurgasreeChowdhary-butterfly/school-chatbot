@@ -605,6 +605,16 @@ invalid number refused); the whole flow in a real browser.
 - pytest (3 new tests, 205 in total): the same end to end with two real servers; the old database is kept; damaged,
   wrong and missing files are refused; nothing changes without YES.
 
+### 6. Pinned versions
+**Built**
+- `requirements.lock.txt`: the 33 server packages at the exact versions in the working environment (made in a clean
+  virtual environment from requirements.txt, limited to the installed versions, so test tools are not included).
+- The Dockerfile installs from it; `requirements.txt` stays the loose list; the README set-up uses the lock.
+
+**Tested**: `pip-audit -r requirements.lock.txt`: no known vulnerabilities. pytest (3 new tests, 208 in total): every
+package in requirements.txt is pinned exactly; the installed versions match the lock (so the tests run with what the
+server gets); Docker uses the lock.
+
 ## Known weaknesses (overall, updated 22 Oct 2026, after the real-content round)
 1. **Model quality and quota.** Development uses `gemini-3.5-flash-lite` on the free tier. It is a small model and
    answers vary between runs (see docs/consistency-report.md). The bigger models failed (timeouts) or had a
@@ -626,7 +636,7 @@ invalid number refused); the whole flow in a real browser.
 11. **Browser support** was tested in headless Chromium and Chrome on Windows (desktop and phone size), not Safari/Firefox or a real phone.
 12. **Not deployed.** The Docker image was never built here (Docker Desktop was not running); follow docs/deploy.md on a test machine first.
 13. **Records are never deleted.** The privacy notice says 12 months; a nightly clean-up is still needed (docs/security-review.md).
-14. **Package versions are not pinned**; pin them before deploying and re-run `pip-audit` monthly.
+14. **Package versions are pinned** (requirements.lock.txt); updates must be made on purpose, with tests and `pip-audit`.
 15. **Simulated users: only 1 of 10 planned runs per scenario** before the free quota ran out (all passed).
 16. **Document ingestion sorts lines by keywords**; drafts need a careful human edit, and conflicts are only checked
     for fees, holiday dates and role contacts.

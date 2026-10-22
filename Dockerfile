@@ -7,8 +7,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     FORWARDED_ALLOW_IPS=127.0.0.1
 
 WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Exact tested versions (requirements.lock.txt), so a rebuild months later gets the same packages.
+COPY requirements.lock.txt .
+RUN pip install --no-cache-dir -r requirements.lock.txt
 
 COPY backend ./backend
 COPY widget ./widget

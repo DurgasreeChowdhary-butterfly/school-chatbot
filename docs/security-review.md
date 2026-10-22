@@ -122,8 +122,8 @@ Already: 5 wrong passwords per IP address in 15 minutes block that address; cons
    on chats would limit the cost. Faking an address with an `X-Forwarded-For` header no longer works: the Docker set-up
    believes that header only from Caddy's fixed address (it trusted every address before; `tests/test_proxy_headers.py`).
 6. **Prompt injection** can still change the bot's wording; saving, consent, confirmation and lookups are enforced in code.
-7. **Package versions are not pinned** (`requirements.txt` has names only). Pin them (`pip freeze`) before deploying so
-   the server gets exactly the tested versions, and re-run `pip-audit` monthly.
+7. **Package versions are pinned** in `requirements.lock.txt` (third round; the Dockerfile installs from it). Re-run
+   `pip-audit -r requirements.lock.txt` monthly and update versions on purpose.
 8. **Backups contain personal data**; they must be stored where only authorised staff can open them.
 9. **A hacked school website** could read the chat in its own page (the widget runs inside it). This cannot be fixed
    from the chatbot side.
