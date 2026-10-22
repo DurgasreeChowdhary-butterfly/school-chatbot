@@ -79,6 +79,12 @@ CREATE TABLE IF NOT EXISTS outbox (
     sent_at TEXT,
     sent_to TEXT DEFAULT ''
 );
+CREATE TABLE IF NOT EXISTS audit_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    at TEXT NOT NULL,
+    action TEXT NOT NULL,
+    detail TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS chat_sessions (
     id TEXT PRIMARY KEY,
     history TEXT NOT NULL,

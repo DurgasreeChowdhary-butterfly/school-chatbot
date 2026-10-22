@@ -59,6 +59,7 @@ Fill in these values. Keep `.env` private: only the person running the server sh
 | `TEST_MODE` | `true` at first, `false` when the school approves real sending | `true` sends every email to `TEST_RECIPIENT` only |
 | `TEST_RECIPIENT` | your own email address | Used while `TEST_MODE=true`. Check email with `docker compose exec chatbot python scripts/send_test_email.py` |
 | `COUNSELLOR_EMAIL_PILOT` | optional | Overrides the counsellor email in routing.json |
+| `RETENTION_MONTHS` | `12` (or what the privacy notice says) | Older closed records are deleted by the nightly purge (step 8) |
 | `CHAT_LIMIT_PER_SESSION`, `CHAT_LIMIT_PER_IP`, `HISTORY_LIMIT` | leave the defaults (12, 40, 20) | Raise the IP limit if many parents share one school network |
 
 `DB_PATH` is set by `docker-compose.yml` (the database lives in a Docker volume); do not set it in `.env`.
@@ -141,6 +142,23 @@ It writes `/app/data/backups/chatbot-YYYYMMDD-HHMMSS.db`, checks it, and keeps t
 ```
 30 2 * * * cd /home/<you>/school-chatbot && docker compose exec -T chatbot python scripts/backup_db.py >> backup.log 2>&1
 ```
+
+**Delete old records every night (after the backup).** The privacy notice promises records are kept for
+`RETENTION_MONTHS` (default 12, set in `.env`). First see what would be deleted (nothing is deleted without `--apply`):
+
+```bash
+docker compose exec chatbot python scripts/purge_old_records.py
+```
+
+Then add a second crontab line, at 03:00, after the backup:
+
+```
+0 3 * * * cd /home/<you>/school-chatbot && docker compose exec -T chatbot python scripts/purge_old_records.py --apply >> purge.log 2>&1
+```
+
+It never deletes enquiries still being followed up (New, Contacted, Visit booked), open concerns (Received,
+In progress) or callbacks not yet made. Each run adds a line to the audit log on the staff page (counts only).
+Backups older than the same limit should be deleted too (`backup_db.py --keep 30` keeps a month of nightly copies).
 
 **Copy backups off the server** at least once a week (a server can fail), for example:
 

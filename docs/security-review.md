@@ -116,8 +116,8 @@ Already: 5 wrong passwords per IP address in 15 minutes block that address; cons
    Before many staff use it, add personal accounts (or put `/staff` behind the school's Google/Microsoft login).
 2. **Staff logins and rate limits are kept in memory**: a restart logs staff out and resets the limits.
 3. **Logout and login are not CSRF-protected** (SameSite=Strict covers most cases); impact is low with one shared account.
-4. **Records are kept forever.** The privacy notice says 12 months, but nothing deletes old enquiries, tickets, callbacks
-   or outbox emails yet (chat sessions are deleted after 2 hours idle). Add a nightly clean-up before real use.
+4. **Old records are only deleted if the nightly purge is set up** (`scripts/purge_old_records.py --apply`, see
+   docs/deploy.md). Built in the third round, with a staff-page action to delete one person's data on request.
 5. **Someone with many real addresses can still use up the AI quota** (the per-IP limit cannot stop that); a daily cap
    on chats would limit the cost. Faking an address with an `X-Forwarded-For` header no longer works: the Docker set-up
    believes that header only from Caddy's fixed address (it trusted every address before; `tests/test_proxy_headers.py`).

@@ -19,6 +19,9 @@
   h1 { margin: 0; font-size: 22px; } h2 { margin: 0 0 2px; font-size: 18px; }
   .demo { background: var(--gold-soft); border: 1px solid var(--gold); border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 700; }
   .banner { background: var(--gold-soft); border: 1px solid var(--gold); border-radius: 10px; padding: 10px 14px; font-size: 13px; margin-bottom: 16px; }
+  .form-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0; }
+  .form-row input { font: inherit; font-size: 14px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); min-width: 0; }
+  button.danger { background: var(--bad); color: #fff; border-color: var(--bad); }
   .banner.alert { background: var(--bad-soft, #FBE3E1); border-color: var(--bad, #B3261E); }
   .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   button, .btn { font: inherit; font-size: 13px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; cursor: pointer; text-decoration: none; }
@@ -77,6 +80,27 @@
         (placeholder address or no test address); "logged" = recorded only. <b id="emailNote"></b></p></div>
     <div class="scroll" id="outbox"></div>
   </section>
+  <section class="panel">
+    <div class="panel-head"><h2>Delete a person's data (on request)</h2>
+      <p>When a parent asks for their details to be deleted: enter the mobile number they used, check what is stored,
+        then type DELETE to confirm. This removes their enquiries, concerns, callback requests, emails and chats,
+        and cannot be undone. The log below keeps only what was done, never the number.</p></div>
+    <div class="form-row">
+      <label for="delMobile">Mobile number</label>
+      <input id="delMobile" inputmode="numeric" autocomplete="off" placeholder="10-digit mobile">
+      <button type="button" id="delFind">Find</button>
+    </div>
+    <div id="delPreview" hidden>
+      <p id="delSummary"></p>
+      <div class="form-row">
+        <label for="delConfirm">Type DELETE to confirm</label>
+        <input id="delConfirm" autocomplete="off">
+        <button type="button" class="danger" id="delGo">Delete everything for this number</button>
+      </div>
+    </div>
+    <h3>Audit log</h3>
+    <div class="scroll" id="audit"></div>
+  </section>
 </div>
 <script>
 "use strict";
@@ -124,6 +148,7 @@ async function load() {
   table("#callbacks", d.callbacks, ["Ref", "Name", "Mobile", "About", "To", "Status", "Logged"], c => [
     `<b>${esc(c.ref)}</b>`, esc(c.name), esc(c.mobile), { cls: "wrap-text", html: esc(c.reason) }, esc(c.assigned_to), statusSelect("callbacks", c), when(c.created_at)
   ]);
+  table("#audit", d.audit, ["When", "Action", "Details"], a => [when(a.at), esc(a.action), { cls: "wrap-text", html: esc(a.detail) }]);
   $("#emailNote").textContent = !d.email_on ? "Email is not set up: messages are only kept here."
     : d.test_mode ? "Test mode: every email goes to the test address, not to staff." : "";
   table("#outbox", d.outbox, ["When", "Kind", "To", "Subject", "Status", ""], m => [
@@ -143,6 +168,28 @@ document.addEventListener("change", async e => {
   try { await api("/staff/api/status", { kind: s.dataset.kind, ref: s.dataset.ref, status: s.value }); toast(`${s.dataset.ref}: ${s.value}`); }
   catch (err) { toast("Could not save: " + err.message); load(); }
 });
+const NAMES = { enquiries: "enquiry", tickets: "concern", callbacks: "callback request", outbox: "email", chat_sessions: "chat" };
+$("#delFind").onclick = async () => {
+  $("#delPreview").hidden = true;
+  try {
+    const r = await api("/staff/api/person/preview", { mobile: $("#delMobile").value });
+    const parts = Object.entries(r.counts).map(([t, n]) => `${n} ${NAMES[t] || t}${n === 1 ? "" : "s"}`);
+    if (!parts.length) { toast("Nothing is stored for this number."); return; }
+    $("#delSummary").textContent = `Stored for this number: ${parts.join(", ")}.` +
+      (r.open.length ? ` Still open: ${r.open.join(", ")}. Deleting removes these too.` : "");
+    $("#delConfirm").value = "";
+    $("#delPreview").hidden = false;
+  } catch (err) { toast(err.message); }
+};
+$("#delGo").onclick = async () => {
+  if ($("#delConfirm").value !== "DELETE") { toast("Type DELETE (in capitals) to confirm."); return; }
+  try {
+    await api("/staff/api/person/delete", { mobile: $("#delMobile").value, confirm: "DELETE" });
+    toast("Deleted.");
+    $("#delMobile").value = ""; $("#delPreview").hidden = true;
+    load();
+  } catch (err) { toast("Could not delete: " + err.message); }
+};
 document.addEventListener("click", async e => {
   const b = e.target.closest("button[data-resend]"); if (!b) return;
   b.disabled = true;

@@ -58,5 +58,9 @@ def _origins(name: str) -> list[str]:
 
 ALLOWED_ORIGINS = _origins("ALLOWED_ORIGINS")
 
+# Months to keep enquiries, tickets, callbacks, emails and chats (scripts/purge_old_records.py deletes older ones;
+# anything still being followed up is kept). The privacy notice must say the same.
+RETENTION_MONTHS = _int("RETENTION_MONTHS", 12)
+
 # /docs and /openapi.json (the automatic API pages): on while testing, off when the real content is live.
 API_DOCS = _bool("API_DOCS", DEMO_MODE)

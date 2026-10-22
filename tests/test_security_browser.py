@@ -74,3 +74,30 @@ def test_session_id_is_random_without_randomuuid(server, browser):
     sid = ids[0].strip('"')
     assert re.fullmatch(r"s-[0-9a-f]{32}", sid), sid   # 128 random bits from crypto.getRandomValues
     page.close()
+
+
+def test_delete_a_persons_data_from_the_staff_page(server, browser):
+    from backend.app import db
+
+    db.init_db(BROWSER_DB["path"])
+    db.insert("enquiries", {"campus": "pilot-campus", "parent_name": "Deleteme Parent", "child_name": "Sample Kid",
+                            "class_applying": "Grade 3", "mobile": "9000000077", "visit_preference": "Saturday",
+                            "assigned_to": "Admission counsellor"})
+    page = browser.new_page(viewport={"width": 1280, "height": 900})
+    page.goto(server + "/staff")
+    page.fill("input[name=password]", "browser-test")
+    page.click("button[type=submit]")
+    page.get_by_role("heading", name="Staff view").wait_for()
+    page.get_by_text("Deleteme Parent").wait_for()
+    page.fill("#delMobile", "90000 00077")
+    page.click("#delFind")
+    page.get_by_text("Stored for this number: 1 enquiry.").wait_for()
+    page.click("#delGo")                                   # without typing DELETE: refused
+    page.get_by_text("Type DELETE (in capitals) to confirm.").wait_for()
+    assert db.find_one("enquiries", mobile="9000000077") is not None
+    page.fill("#delConfirm", "DELETE")
+    page.click("#delGo")
+    page.get_by_text("One person's data: 1 enquiry").wait_for()  # the audit log line
+    assert db.find_one("enquiries", mobile="9000000077") is None
+    assert page.get_by_text("Deleteme Parent").count() == 0
+    page.close()

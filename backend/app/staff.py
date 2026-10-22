@@ -16,7 +16,7 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from pydantic import BaseModel
 
-from . import config, db, jobs, notify
+from . import config, db, jobs, notify, retention
 
 log = logging.getLogger("chatbot.staff")
 router = APIRouter()
@@ -201,6 +201,7 @@ def staff_data(request: Request):
         "email_on": notify.smtp_configured(),
         "test_mode": notify.test_mode(),
         "login_alert": login_alert(),
+        "audit": retention.recent_audit(),
     }
 
 
@@ -245,6 +246,35 @@ def resend_email(req: Resend, request: Request):
         raise HTTPException(status_code=404, detail="Not found.")
     log.info("Staff resent email %s: %s", req.id, row["status"])
     return {"ok": True, "status": row["status"], "error": row["error"]}
+
+
+class Person(BaseModel):
+    mobile: str
+    confirm: str = ""
+
+
+@router.post("/staff/api/person/preview")
+def person_preview(req: Person, request: Request):
+    """Step 1 of a deletion request: what is stored for this mobile number (counts only)."""
+    _require_login(request)
+    _require_same_site_request(request)
+    try:
+        return retention.preview_person(req.mobile)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/staff/api/person/delete")
+def person_delete(req: Person, request: Request):
+    """Step 2: delete everything for this mobile number. The staff member must type DELETE to confirm."""
+    _require_login(request)
+    _require_same_site_request(request)
+    if req.confirm != "DELETE":
+        raise HTTPException(status_code=400, detail="Type DELETE to confirm.")
+    try:
+        return {"deleted": retention.delete_person(req.mobile)}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/staff/export/{kind}.csv")

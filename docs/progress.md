@@ -529,6 +529,22 @@ and 127.0.0.1 as a direct client, and uses `/consent` (rate limited like `/chat`
 **Tested**: pytest (7 new or rewritten tests, 183 in total): right password works during an attack; waits grow 0.5,
 1.0, 1.5 s; the cap; a real (not faked) wait; the banner data; old failures expire; one address still blocked after 5.
 
+### 2. Data retention
+**Built**
+- `RETENTION_MONTHS` in .env (default 12). `backend/app/retention.py` and `scripts/purge_old_records.py`: dry run by
+  default, `--apply` deletes. It removes chats, enquiries, tickets, callbacks and notification emails whose last change
+  is older than the limit, but never enquiries still being followed up (New, Contacted, Visit booked), open tickets
+  (Received, In progress), callbacks not yet made, or emails about records that are kept.
+- Staff page "Delete a person's data (on request)": enter the mobile number, see what is stored (and what is still
+  open), type DELETE, confirm. Removes that number's enquiries, tickets, callbacks, emails and chats.
+- New `audit_log` table, shown on the staff page: what was done and how many, never the number, names or references.
+- docs/deploy.md: nightly purge with cron (03:00, after the 02:30 backup).
+
+**Tested**: pytest (7 new tests, 190 in total): old closed records deleted and open ones kept (including their emails);
+dry run deletes nothing; audit line without personal details; the setting; the script's dry run and --apply; deleting
+one person (other people untouched, chat found by number in any format, needs DELETE, login and the staff header,
+invalid number refused); the whole flow in a real browser.
+
 ## Known weaknesses (overall, updated 22 Oct 2026, after the real-content round)
 1. **Model quality and quota.** Development uses `gemini-3.5-flash-lite` on the free tier. It is a small model and
    answers vary between runs (see docs/consistency-report.md). The bigger models failed (timeouts) or had a
