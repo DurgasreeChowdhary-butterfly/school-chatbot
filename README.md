@@ -102,4 +102,7 @@ nothing (it never makes up facts and does not use the AI), and lists questions f
    holidays that disagree with escalation.md / calendar.md, and any leftover DUMMY text, example.com address or
    "+91 00000" number. (You can check a folder of new files first: `python scripts/check_kb.py --live --kb C:/path/to/new-kb`.)
    Set `DEMO_MODE=false` in .env only when it says "All checks passed" and everything in kb/ is approved.
+   Then make new test questions from the real content: `python scripts/generate_checks.py` writes
+   `docs/test-checks.draft.json` and `docs/test-questions.draft.csv`; review them (see each `review_note`) and rename
+   them to `docs/test-checks.json` and `docs/test-questions.csv`.
 6. Restart the server, run `python -m pytest`, then the answer-quality test, and update `docs/test-report.md`.

@@ -397,6 +397,32 @@
 - Conflict checks cover fees, holiday dates and role contacts only; other conflicts (timings, ages) need a careful read.
 - Tables in PDFs lose their column headings; such rows are kept as they are and need checking.
 
+### 2. Test generation
+**Built**
+- `scripts/generate_checks.py`: reads the knowledge files and writes `docs/test-checks.draft.json` (question, group,
+  expected, source file and the automatic checks, in the format of test-checks.json) and
+  `docs/test-questions.draft.csv` (format of test-questions.csv). Questions come from templates filled with facts in
+  the files (ages, fees per class, payment, receipts, sibling concession, board, affiliation, timings, contacts,
+  holidays, exams, hiring, transport, PTM, who handles each concern), plus 16 fixed cases (discount and admission
+  promises, safety and health, privacy and injection, marks, ticket status, invalid number, visit booking with
+  consent, out of scope, comparison, a topic not in the content, greeting). No AI is used.
+- Topics where no facts were found are listed; questions that need a person's attention carry a `review_note`.
+- Today it proposes 49 questions from the dummy content (3 with a review note). The drafts are committed as a sample.
+
+**Tested**
+- On the 38 questions that match the current test, the generated checks were applied to all 228 live answers from
+  item 1: they agreed with the hand judgement on 227; the one failure is the real mistake (garbled email, Q15).
+- pytest (4 new tests, 144 in total): about 40 questions with valid patterns and the required kinds of cases; the
+  generated checks pass the 120 hand-checked answers at temperature 0.2; questions follow the content (a changed fee
+  appears in the check); an empty folder reports the missing topics and keeps the fixed cases.
+
+**What failed and how it was fixed**
+- The 20%-discount case first failed any answer containing "guarantee" (which would fail "I cannot guarantee");
+  it now only fails "is guaranteed" or an offer of 20%.
+
+**Still weak**
+- Template questions are less varied than real parents' questions. The "next PTM" check needs the exact date added by hand.
+
 ## Known weaknesses (overall, updated 22 Oct 2026)
 1. **Model quality and quota.** Development uses `gemini-3.5-flash-lite` on the free tier. It is a small model and
    answers vary between runs (see docs/consistency-report.md). The bigger models failed (timeouts) or had a
