@@ -180,6 +180,22 @@
   rerun passed.
 - Two older tests needed updating (new reply fields; a test that now hits the session rate limit).
 
+## Reliability round (22 Oct 2026)
+
+### 1. Consistency
+_In progress: see docs/consistency-report.md when the three live runs are finished._
+
+### 2. Model comparison
+**Built**
+- `scripts/compare_models.py MODEL [MODEL ...]`: runs the 40 questions for each model in-process (no server needed,
+  throwaway database) and prints a table of pass / fail / error counts from the automatic checks.
+- Each model first gets one tiny request; a model whose daily quota is used up, or that does not answer, is skipped.
+  A model that runs out part-way is stopped after 3 failed replies in a row and marked "stopped".
+- Answers are saved to `docs/test-runs/compare-<model>.json`. Options: `--only 5 6 25`, `--gap 8`.
+
+**Tested**
+- Dry run with `LLM_PROVIDER=fake` (two made-up model names, two questions): table printed, no API calls.
+
 ## Known weaknesses (overall)
 1. **Model quality and quota.** Development uses `gemini-3.5-flash-lite` on the free tier. It is a small model; the rules
    needed several rounds, and answers can vary from run to run. The bigger models failed (timeouts) or had a
