@@ -4,8 +4,8 @@ Usage (no server needed; uses LLM_PROVIDER and the API key from .env):
     python scripts/compare_models.py gemini-3.5-flash-lite gemini-3.1-flash-lite
     python scripts/compare_models.py gemini-3.5-flash-lite --only 5 6 25 --gap 8
 
-Each model first gets one tiny test request. A model whose daily quota is used up (or that does not answer)
-is skipped, so no quota is wasted. A model that hits its quota part-way through is stopped after
+Each model first gets one tiny test request (retried twice). A model whose daily quota is used up (or that never
+answers) is skipped, so no quota is wasted. A model that hits its quota part-way through is stopped after
 3 failed replies in a row and marked "stopped". Answers are saved to docs/test-runs/compare-<model>.json
 and checked with scripts/grade_answers.py (docs/test-checks.json). Uses a throwaway database.
 Dummy data only: never run this with real parent or child data on the free tier."""
@@ -33,14 +33,37 @@ from backend.app.llm.factory import get_provider  # noqa: E402
 from grade_answers import FALLBACK, grade_run  # noqa: E402
 
 
+BACKOFF = [15, 30]  # seconds before retrying a failed reply (busy servers, timeouts)
+
+
 def probe(provider) -> str | None:
-    """One tiny request. Returns None if the model answers, or the reason it can't be used."""
-    result = provider.generate("Reply with the single word OK.", [Message(role="user", content="Hello")])
-    if not result.failed:
-        return None
-    if "daily quota" in (result.error or ""):
-        return "daily quota used up"
+    """A tiny request (tried up to 3 times). Returns None if the model answers, or the reason it can't be used.
+    A used-up daily quota is not retried."""
+    for attempt in range(len(BACKOFF) + 1):
+        result = provider.generate("Reply with the single word OK.", [Message(role="user", content="Hello")])
+        if not result.failed:
+            return None
+        if "daily quota" in (result.error or ""):
+            return "daily quota used up"
+        if attempt < len(BACKOFF):
+            print(f"   test request failed ({(result.error or '')[:60]}), retrying in {BACKOFF[attempt]}s")
+            time.sleep(BACKOFF[attempt])
     return (result.error or "no answer")[:120]
+
+
+def ask(client: TestClient, question: str) -> str:
+    """One question in a new chat session; a fallback reply is retried with backoff."""
+    for attempt in range(len(BACKOFF) + 1):
+        r = client.post("/chat", json={"session_id": f"compare-{uuid.uuid4().hex[:12]}", "message": question})
+        body = r.json()
+        reply = body.get("reply", f"HTTP {r.status_code}")
+        if body.get("action"):
+            reply += f" [chat window shows: {body['action']}]"
+        if FALLBACK not in reply or attempt == len(BACKOFF):
+            return reply
+        print(f"   fallback reply, retrying in {BACKOFF[attempt]}s")
+        time.sleep(BACKOFF[attempt])
+    return reply
 
 
 def run_model(client: TestClient, model: str, questions: list[dict], gap: float) -> tuple[list[dict], bool]:
@@ -51,11 +74,7 @@ def run_model(client: TestClient, model: str, questions: list[dict], gap: float)
     for i, q in enumerate(questions):
         if i:
             time.sleep(gap)
-        r = client.post("/chat", json={"session_id": f"compare-{uuid.uuid4().hex[:12]}", "message": q["question"]})
-        body = r.json()
-        reply = body.get("reply", f"HTTP {r.status_code}")
-        if body.get("action"):
-            reply += f" [chat window shows: {body['action']}]"
+        reply = ask(client, q["question"])
         print(f"   [{q['id']}] {reply[:100]!r}")
         results.append({**q, "model": model, "reply": reply})
         out.write_text(json.dumps(results, indent=2, ensure_ascii=False), encoding="utf-8")

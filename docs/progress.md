@@ -221,6 +221,21 @@
 
 **Tested**
 - Dry run with `LLM_PROVIDER=fake` (two made-up model names, two questions): table printed, no API calls.
+- Live (22 Oct 2026, default temperature, after the item 1 fixes):
+
+  | Model | Pass (of 40) | Fail | Error | Run |
+  |---|---|---|---|---|
+  | gemini-3.5-flash-lite | 40 | 0 | 0 | complete |
+  | gemini-3.1-flash-lite | 39 | 0 | 1 | complete |
+
+  The 3.1 "error" (Q10) was Google's servers staying busy (503) through all retries, not a wrong answer. By hand, 3.1's
+  answers were also fine, a little wordier, and once (Q17) offered the front office without giving its number.
+  gemini-3.6-flash was not run: its free tier allows only 20 requests a day, fewer than one full test.
+
+**What failed and how it was fixed**
+- First live run: gemini-3.5-flash-lite was skipped because its one test request hit a passing timeout (504), and
+  a busy-server failure counted as an error. The test request is now tried 3 times (a used-up quota is still not
+  retried), and fallback replies are retried after 15 and 30 seconds, like `run_test_questions.py`.
 
 ### 3. Persistence
 **Built**
