@@ -68,3 +68,9 @@ def test_small_spelling_differences_are_accepted():
     assert said_by_person("Sample Parent", said)
     assert not said_by_person("Sunday evening", said, "visit")
     assert not said_by_person("Ravi Kumar", said)
+
+
+def test_class_written_in_words_is_accepted():
+    assert said_by_person("Grade 3", "she is going to third standard", "class")
+    assert said_by_person("Grade 10", "class ten", "class")
+    assert not said_by_person("Grade 4", "she is going to third standard", "class")

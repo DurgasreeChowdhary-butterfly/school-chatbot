@@ -59,6 +59,9 @@ FILLER = {"for", "now", "the", "and", "any", "time", "day", "on", "at", "in", "t
           "please", "prefer", "preferred", "preference", "visit", "around", "about", "my", "mr", "mrs", "ms", "dr"}
 NO_VISIT = re.compile(r"\b(no visit|not now|later|not yet|none)\b", re.I)
 SAID_NO = re.compile(r"\b(no|not|later|skip|don'?t|nahi|ledu|vaddu|none|nothing)\b", re.I)
+NUMBER_WORDS = {n: rf"\b({a}|{b})\b" for n, a, b in [
+    (1, "one", "first"), (2, "two", "second"), (3, "three", "third"), (4, "four", "fourth"), (5, "five", "fifth"),
+    (6, "six", "sixth"), (7, "seven", "seventh"), (8, "eight", "eighth"), (9, "nine", "ninth"), (10, "ten", "tenth")]}
 EMPTY_ANSWERS = {"", "none", "no", "nil", "n/a", "na", "-", "not specified", "not given", "not provided", "skipped"}
 
 
@@ -71,7 +74,12 @@ def said_by_person(value: str, said: str, kind: str = "text") -> bool:
         return normalize_mobile(value) is not None and normalize_mobile(value) in re.sub(r"\D", "", said_low)
     if kind == "class":
         keys = re.findall(r"\d+|nursery|lkg|ukg", value.lower())
-        return any(re.search(rf"(?<!\d){k}(?!\d)" if k.isdigit() else rf"\b{k}\b", said_low) for k in keys)
+        for k in keys:
+            if re.search(rf"(?<!\d){k}(?!\d)" if k.isdigit() else rf"\b{k}\b", said_low):
+                return True
+            if k.isdigit() and int(k) in NUMBER_WORDS and re.search(NUMBER_WORDS[int(k)], said_low):
+                return True  # "third standard", "class three"
+        return False
     if kind == "visit" and NO_VISIT.search(value):
         return bool(SAID_NO.search(said_low))
     words = [w for w in re.findall(r"[a-z0-9]+", value.lower()) if w not in FILLER and (len(w) > 1 or w.isdigit())]
