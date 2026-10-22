@@ -38,7 +38,8 @@ def handle_message(
     group: str | None = None,
 ) -> ChatOutcome:
     session.turn += 1
-    ctx = tools.ToolContext(session=session, campus=campus)
+    said = "\n".join([*(m.content for m in session.history if m.role == "user"), text])
+    ctx = tools.ToolContext(session=session, campus=campus, said=said)
     system_prompt = build_system_prompt(knowledge, date.today().strftime("%A %d %B %Y"), group)
     user_message = Message(role="user", content=text)
     conversation = [*session.history, user_message]

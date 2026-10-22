@@ -423,6 +423,26 @@
 **Still weak**
 - Template questions are less varied than real parents' questions. The "next PTM" check needs the exact date added by hand.
 
+### 3. Simulated users
+**Built**
+- `scripts/simulate_users.py`: runs enquiry and ticket conversations with the live model against scripted users with a
+  profile and a style: a normal user, misspellings, several details in one message, changing their mind, wrong formats,
+  Tenglish, an invalid then a valid number, trying to skip consent, and (tickets) a wrong-number status lookup.
+  The users answer what the bot asks, tap "I agree" (except when skipping consent) and stop at a reference.
+- Every conversation has its own empty database; pass/fail is decided by what was saved there: names, class, mobile,
+  visit time actually given, consent time, the reference told to the user, no made-up references, the notification,
+  nothing saved without consent or after "don't log it", and nothing revealed to a wrong number.
+- `--runs 10` (default) = 10 runs of each of the 17 scenarios, round-robin so stopping early still covers all;
+  results are saved after each conversation and a new run carries on; it stops at the daily quota.
+
+**What failed and how it was fixed**
+- Pilot (1 run of each scenario, live): 17 of 17 passed the first checks, but reading the transcripts showed the model
+  saved "No visit for now" for a visitor who was never asked about a visit. Fixed in code, not only in the rules:
+  `validation.made_up()` makes enquiries, tickets and callbacks refuse any name, mobile, class or visit time that does
+  not appear in what the person typed in this chat, and tells the model to ask for it. The simulator now checks this too.
+- Tests: the shared test helper now puts the details in the visitor's message (as a real visitor would); 4 new tests
+  for the check (169 in total).
+
 ## Known weaknesses (overall, updated 22 Oct 2026)
 1. **Model quality and quota.** Development uses `gemini-3.5-flash-lite` on the free tier. It is a small model and
    answers vary between runs (see docs/consistency-report.md). The bigger models failed (timeouts) or had a

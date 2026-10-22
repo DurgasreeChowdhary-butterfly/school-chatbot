@@ -48,3 +48,44 @@ def match_choice(value: str, choices: list[str]) -> str | None:
         if choice.lower() == wanted:
             return choice
     return None
+
+
+# ---------- Did the person actually give this detail? ----------
+# The AI must never make up a detail (seen in the simulated-user test: a visit time saved that was never asked for).
+# Every detail it passes to a saving tool must appear in what the person typed in this chat.
+
+FILLER = {"for", "now", "the", "and", "any", "time", "day", "on", "at", "in", "to", "of", "an", "or", "is", "am", "pm",
+          "please", "prefer", "preferred", "preference", "visit", "around", "about", "my", "mr", "mrs", "ms", "dr"}
+NO_VISIT = re.compile(r"\b(no visit|not now|later|not yet|none)\b", re.I)
+SAID_NO = re.compile(r"\b(no|not|later|skip|don'?t|nahi|ledu|vaddu|none|nothing)\b", re.I)
+EMPTY_ANSWERS = {"", "none", "no", "nil", "n/a", "na", "-", "not specified", "not given", "not provided", "skipped"}
+
+
+def said_by_person(value: str, said: str, kind: str = "text") -> bool:
+    """True if `value` appears in `said` (all the person's messages in this chat), allowing for small changes:
+    names and text need one of their words, a mobile its 10 digits, a class its number or name,
+    and "no visit for now" needs the person to have said no / not now / later."""
+    value, said_low = str(value or "").strip(), str(said or "").lower()
+    if kind == "mobile":
+        return normalize_mobile(value) is not None and normalize_mobile(value) in re.sub(r"\D", "", said_low)
+    if kind == "class":
+        keys = re.findall(r"\d+|nursery|lkg|ukg", value.lower())
+        return any(re.search(rf"(?<!\d){k}(?!\d)" if k.isdigit() else rf"\b{k}\b", said_low) for k in keys)
+    if kind == "visit" and NO_VISIT.search(value):
+        return bool(SAID_NO.search(said_low))
+    words = [w for w in re.findall(r"[a-z0-9]+", value.lower()) if w not in FILLER and (len(w) > 1 or w.isdigit())]
+    return any(re.search(rf"\b{re.escape(w)}", said_low) for w in words)
+
+
+def made_up(details: dict[str, tuple[str, str]], said: str) -> dict[str, str]:
+    """{field: problem} for details the person never gave. `details` maps field -> (value, kind)."""
+    problems = {}
+    for field, (value, kind) in details.items():
+        if kind == "optional":
+            if str(value or "").strip().lower() in EMPTY_ANSWERS:
+                continue
+            kind = "text"
+        if not said_by_person(value, said, kind):
+            problems[field] = ("The person has not given this in the chat. Ask them for it; never fill in or assume "
+                               "a detail.")
+    return problems

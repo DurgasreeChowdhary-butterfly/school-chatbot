@@ -5,7 +5,7 @@ import logging
 from . import db, routing
 from .llm.base import ToolSpec
 from .notify import notify
-from .validation import clean_name, clean_text, match_choice, mask_mobile, normalize_mobile
+from .validation import clean_name, clean_text, made_up, match_choice, mask_mobile, normalize_mobile
 
 log = logging.getLogger("chatbot.enquiries")
 
@@ -69,6 +69,10 @@ def submit_enquiry(args: dict, ctx) -> dict:
         problems["reason"] = "Too long. Ask for a shorter answer."
     if not visit:
         problems["visit_preference"] = "Ask when they would like to visit the campus (or no visit for now)."
+    if not problems:
+        problems = made_up({"parent_name": (parent, "text"), "child_name": (child, "text"), "class_applying": (cls, "class"),
+                            "mobile": (mobile, "mobile"), "visit_preference": (visit, "visit"),
+                            "previous_school": (previous, "optional"), "reason": (reason, "optional")}, ctx.said)
     if problems:
         ctx.session.pending_enquiry = None
         return {"error": "Some details need fixing. Ask the person about these only.", "problems": problems}

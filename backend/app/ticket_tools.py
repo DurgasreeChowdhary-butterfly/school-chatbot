@@ -6,7 +6,7 @@ import re
 from . import db, routing
 from .llm.base import ToolSpec
 from .notify import notify
-from .validation import clean_name, clean_text, mask_mobile, normalize_mobile
+from .validation import clean_name, clean_text, made_up, mask_mobile, normalize_mobile
 
 log = logging.getLogger("chatbot.tickets")
 
@@ -77,6 +77,8 @@ def create_ticket(args: dict, ctx) -> dict:
         problems["parent_name"] = "Ask for their name (letters only)."
     if not mobile:
         problems["mobile"] = "Not a valid 10-digit Indian mobile number. Ask the person to type it again."
+    if not problems:
+        problems = made_up({"parent_name": (name, "text"), "mobile": (mobile, "mobile")}, ctx.said)
     if problems:
         return {"error": "Some details need fixing. Ask the person about these only.", "problems": problems}
 
@@ -151,6 +153,8 @@ def request_callback(args: dict, ctx) -> dict:
         problems["mobile"] = "Not a valid 10-digit Indian mobile number. Ask the person to type it again."
     if reason is None:
         problems["reason"] = "Too long. Ask for a shorter reason."
+    if not problems:
+        problems = made_up({"name": (name, "text"), "mobile": (mobile, "mobile")}, ctx.said)
     if problems:
         return {"error": "Some details need fixing. Ask the person about these only.", "problems": problems}
 

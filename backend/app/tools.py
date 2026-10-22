@@ -34,6 +34,7 @@ class ToolContext:
     session: Session
     campus: str
     action: str | None = None  # an extra instruction for the chat window, e.g. "consent"
+    said: str = ""  # everything the person typed in this chat: saved details must come from here
 
 
 def specs_for(campus: str) -> list[ToolSpec]:

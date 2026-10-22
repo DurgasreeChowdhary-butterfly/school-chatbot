@@ -59,11 +59,18 @@ def agree(client, session_id="s1"):
     assert client.post("/consent", json={"session_id": sid(session_id), "agree": True}).status_code == 200
 
 
+SAVING_TOOLS = {"submit_enquiry", "create_ticket", "request_callback"}
+
+
 def tool_turn(client, fake, message, *calls, reply="OK", session_id="s1", consent=True):
     """One visitor message where the AI calls the given tools (name, args), then replies.
     Returns the tool results the backend sent back to the AI. By default the visitor has agreed to the privacy notice."""
     if consent:
         agree(client, session_id)
+    # The visitor typed the details the AI saves (the backend refuses details the person never gave).
+    typed = [str(v) for name, args in calls if name in SAVING_TOOLS for v in args.values()]
+    if typed:
+        message = f"{message} ({'; '.join(typed)})"
     fake.add(LLMResult(tool_calls=[ToolCall(name=n, arguments=a, id=f"c{i}") for i, (n, a) in enumerate(calls)]),
              LLMResult(text=reply))
     chat(client, message, session_id=session_id)
