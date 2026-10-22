@@ -19,6 +19,7 @@ from .llm.base import LLMProvider
 from .llm.factory import get_provider
 from .logs import setup_logging
 from .ratelimit import RateLimiter
+from .security import SecurityHeaders
 
 setup_logging()
 log = logging.getLogger("chatbot")
@@ -60,8 +61,12 @@ async def lifespan(app: FastAPI):
     stop.set()
 
 
-app = FastAPI(title="School Chatbot", lifespan=lifespan)
+docs = {} if config.API_DOCS else {"docs_url": None, "redoc_url": None, "openapi_url": None}
+app = FastAPI(title="School Chatbot", lifespan=lifespan, **docs)
 app.include_router(staff.router)
+app.add_middleware(SecurityHeaders)
+for warning in config.WARNINGS:
+    log.warning("Setting problem: %s", warning)
 
 # Other websites may call the chat only if listed in ALLOWED_ORIGINS.
 if config.ALLOWED_ORIGINS:
@@ -119,7 +124,9 @@ class ConsentRequest(BaseModel):
 async def friendly_validation_error(request: Request, exc: RequestValidationError):
     """Bad chat requests get a friendly reply the chat window can show, never a stack trace."""
     if request.url.path not in ("/chat", "/consent"):
-        return JSONResponse({"detail": exc.errors()}, status_code=422)
+        # Where and what, but never the input itself (it can be raw bytes, or someone's personal details).
+        detail = [{"loc": [str(part) for part in e["loc"]], "msg": e["msg"]} for e in exc.errors()]
+        return JSONResponse({"detail": detail}, status_code=422)
     fields = {str(e["loc"][-1]) for e in exc.errors()}
     if "message" in fields:
         too_long = any(e["type"] == "string_too_long" for e in exc.errors())

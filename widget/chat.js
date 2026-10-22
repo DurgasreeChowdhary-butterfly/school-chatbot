@@ -26,8 +26,12 @@
   }
   function save(name, value) { try { sessionStorage.setItem(KEY + name, JSON.stringify(value)); } catch (e) {} }
   function newId() {
+    // The session id is the only key to this chat's history, so it must be unguessable.
+    // randomUUID only exists on HTTPS pages; getRandomValues works everywhere (never use Math.random here).
     if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
-    return "s-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
+    var bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    return "s-" + Array.prototype.map.call(bytes, function (b) { return ("0" + b.toString(16)).slice(-2); }).join("");
   }
   var state = {
     sessionId: load("session", null) || newId(),

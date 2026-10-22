@@ -1,5 +1,6 @@
 """All settings from .env in one place. Other files import from here."""
 import os
+import re
 
 from dotenv import load_dotenv
 
@@ -37,4 +38,25 @@ CHAT_LIMIT_PER_IP = _int("CHAT_LIMIT_PER_IP", 40)
 
 # Websites allowed to embed the chat window from another address, e.g. https://www.school.example
 # Empty means only pages served by this server (like /demo) can use the chat.
-ALLOWED_ORIGINS = _list("ALLOWED_ORIGINS")
+# Mistakes found in the settings, logged when the server starts.
+WARNINGS: list[str] = []
+
+
+def _origins(name: str) -> list[str]:
+    """Only exact website addresses like https://www.school.example: "*" (every website) and addresses with a path
+    are refused, so the chat can never be opened up to every website by accident."""
+    kept = []
+    for origin in _list(name):
+        if re.fullmatch(r"https?://[A-Za-z0-9.-]+(:\d+)?", origin):
+            kept.append(origin)
+            if origin.startswith("http://") and not re.fullmatch(r"http://(localhost|127\.0\.0\.1)(:\d+)?", origin):
+                WARNINGS.append(f"{name}: {origin} uses http, not https")
+        else:
+            WARNINGS.append(f"{name}: '{origin}' ignored (use exact addresses like https://www.school.example, never *)")
+    return kept
+
+
+ALLOWED_ORIGINS = _origins("ALLOWED_ORIGINS")
+
+# /docs and /openapi.json (the automatic API pages): on while testing, off when the real content is live.
+API_DOCS = _bool("API_DOCS", DEMO_MODE)

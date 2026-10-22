@@ -443,6 +443,31 @@
 - Tests: the shared test helper now puts the details in the visitor's message (as a real visitor would); 4 new tests
   for the check (169 in total).
 
+### 4. Security review
+Full details: `docs/security-review.md`.
+
+**Checked:** HTML/script in parent text on the staff page, SQL injection, CSRF, cookie flags, security headers, login
+brute force, data leaks in the API and logs, secrets in the repository and history, CORS, package vulnerabilities.
+
+**Fixed (each with tests):**
+- Security headers on every response; strict Content-Security-Policy (inline script allowed by hash) and no-store on
+  the staff pages, `/chat` and `/consent`; HSTS over HTTPS.
+- Login: 50 failures from all addresses in 15 minutes block logins; passwords shorter than 12 characters switch login off.
+- A cross-site form post to a staff endpoint crashed the error handler (500); error replies no longer echo the input.
+- `/docs` and `/openapi.json` are off when `DEMO_MODE=false`.
+- `ALLOWED_ORIGINS` ignores `*` and malformed entries (warning in the log).
+- Chat session ids on plain-http sites used `Math.random`; now `crypto.getRandomValues`.
+
+**Confirmed already safe (now with tests):** staff page escaping (real browser, 4 attack strings in every field),
+parameterised SQL, the staff-page header and SameSite=Strict cookie against CSRF (also from an allowed website),
+cookie flags, no names or numbers in logs, staff data needs login. No secrets in the repository or its history;
+the real key is only in `.env`. `pip-audit`: no known vulnerabilities.
+
+**Tested:** 21 new tests (18 in `test_security.py`, 3 in the browser), 169 in total, all passing.
+
+**Still open** (see the review): one shared staff password, records never deleted (privacy notice says 12 months),
+unpinned package versions, logins and limits in memory.
+
 ## Known weaknesses (overall, updated 22 Oct 2026)
 1. **Model quality and quota.** Development uses `gemini-3.5-flash-lite` on the free tier. It is a small model and
    answers vary between runs (see docs/consistency-report.md). The bigger models failed (timeouts) or had a

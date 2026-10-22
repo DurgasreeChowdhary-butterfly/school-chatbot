@@ -25,6 +25,8 @@ COOKIE = "staff_session"
 SESSION_SECONDS = 8 * 60 * 60          # staff stay logged in for 8 hours
 MAX_FAILED_LOGINS = 5                   # per IP address ...
 FAILED_LOGIN_WINDOW = 15 * 60           # ... in 15 minutes
+MAX_FAILED_LOGINS_ALL = 50              # from all addresses together in 15 minutes (attacks from many addresses)
+MIN_PASSWORD_LENGTH = 12
 
 STATUSES = {
     "enquiries": ["New", "Contacted", "Visit booked", "Closed"],
@@ -46,7 +48,9 @@ def reset_state() -> None:
 
 
 def _admin_password() -> str:
-    return os.getenv("ADMIN_PASSWORD", "").strip()
+    """The staff password, or "" (login off) if it is missing or too short to resist guessing."""
+    password = os.getenv("ADMIN_PASSWORD", "").strip()
+    return password if len(password) >= MIN_PASSWORD_LENGTH else ""
 
 
 def _client_ip(request: Request) -> str:
@@ -77,10 +81,11 @@ def _require_same_site_request(request: Request) -> None:
 def _too_many_failures(ip: str) -> bool:
     cutoff = time.time() - FAILED_LOGIN_WINDOW
     with _lock:
-        attempts = _failed[ip]
-        while attempts and attempts[0] < cutoff:
-            attempts.popleft()
-        return len(attempts) >= MAX_FAILED_LOGINS
+        for attempts in list(_failed.values()):
+            while attempts and attempts[0] < cutoff:
+                attempts.popleft()
+        everyone = sum(len(a) for a in _failed.values())
+        return len(_failed[ip]) >= MAX_FAILED_LOGINS or everyone >= MAX_FAILED_LOGINS_ALL
 
 
 def _login_page(message: str = "", status_code: int = 200) -> HTMLResponse:
@@ -95,7 +100,7 @@ def _login_page(message: str = "", status_code: int = 200) -> HTMLResponse:
 def staff_page(request: Request):
     if not _logged_in(request):
         if not _admin_password():
-            return _login_page("Staff login is switched off: set ADMIN_PASSWORD in .env and restart the server.", 503)
+            return _login_page("Staff login is switched off: set ADMIN_PASSWORD in .env (at least 12 characters) and restart the server.", 503)
         return _login_page()
     return FileResponse(PAGES / "staff.html")
 
@@ -105,7 +110,7 @@ def login(request: Request, password: str = Form("")):
     ip = _client_ip(request)
     expected = _admin_password()
     if not expected:
-        return _login_page("Staff login is switched off: set ADMIN_PASSWORD in .env and restart the server.", 503)
+        return _login_page("Staff login is switched off: set ADMIN_PASSWORD in .env (at least 12 characters) and restart the server.", 503)
     if _too_many_failures(ip):
         log.warning("Staff login blocked for %s: too many failed attempts", ip)
         return _login_page("Too many wrong attempts. Please wait 15 minutes and try again.", 429)

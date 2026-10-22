@@ -132,3 +132,10 @@ def test_server_answers_cors_only_for_the_allowed_origin(sites):
     assert preflight(sites["allowed"]).headers.get("access-control-allow-origin") == sites["allowed"]
     assert "access-control-allow-origin" not in preflight(sites["blocked"]).headers
     assert "access-control-allow-origin" not in preflight("https://evil.example").headers
+    # Even the allowed website may not send the staff page's header (so it cannot drive staff actions),
+    # and credentials (the staff cookie) are never allowed cross-site.
+    staff = httpx.options(sites["api"] + "/staff/api/status", headers={
+        "Origin": sites["allowed"], "Access-Control-Request-Method": "POST",
+        "Access-Control-Request-Headers": "content-type,x-requested-with"})
+    assert staff.status_code == 400 and "x-requested-with" not in staff.headers.get("access-control-allow-headers", "")
+    assert "access-control-allow-credentials" not in preflight(sites["allowed"]).headers
