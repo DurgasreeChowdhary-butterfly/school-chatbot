@@ -79,6 +79,18 @@ CREATE TABLE IF NOT EXISTS outbox (
     sent_at TEXT,
     sent_to TEXT DEFAULT ''
 );
+CREATE TABLE IF NOT EXISTS unanswered (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    campus TEXT NOT NULL,
+    question TEXT NOT NULL,
+    key TEXT NOT NULL,
+    count INTEGER NOT NULL DEFAULT 1,
+    first_at TEXT NOT NULL,
+    last_at TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'open',
+    handled_at TEXT,
+    UNIQUE (campus, key)
+);
 CREATE TABLE IF NOT EXISTS audit_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     at TEXT NOT NULL,

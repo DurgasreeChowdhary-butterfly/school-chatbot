@@ -19,7 +19,7 @@ KEEP_STATUSES = {  # still being followed up: never deleted for age
     "callbacks": ("New",),
 }
 NAMES = {"enquiries": "enquiry", "tickets": "ticket", "callbacks": "callback", "outbox": "email",
-         "chat_sessions": "chat", "unanswered": "unanswered question"}
+         "chat_sessions": "chat", "unanswered": "unanswered question"}  # unanswered: no numbers or emails
 
 
 def cutoff(months: int, now: datetime | None = None) -> datetime:
@@ -56,6 +56,7 @@ def purge_old(months: int, apply: bool = False, now: datetime | None = None) -> 
                           if r["related_ref"] not in kept_refs]
         plan["chat_sessions"] = [r["id"] for r in conn.execute(
             "SELECT id FROM chat_sessions WHERE last_seen < ?", (limit.timestamp(),))]
+        plan["unanswered"] = [r["id"] for r in conn.execute("SELECT id FROM unanswered WHERE last_at < ?", (stamp,))]
         counts = {t: len(ids) for t, ids in plan.items() if ids}
         if apply:
             for table, ids in plan.items():

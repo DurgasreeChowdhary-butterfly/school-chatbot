@@ -81,6 +81,12 @@
     <div class="scroll" id="outbox"></div>
   </section>
   <section class="panel">
+    <div class="panel-head"><h2>Questions the bot could not answer</h2>
+      <p>What people asked that is not in the school's information yet (newest first; phone numbers and emails removed).
+        Add the answer to the knowledge files, then press "Content added". If someone asks again, it comes back.</p></div>
+    <div class="scroll" id="unanswered"></div>
+  </section>
+  <section class="panel">
     <div class="panel-head"><h2>Delete a person's data (on request)</h2>
       <p>When a parent asks for their details to be deleted: enter the mobile number they used, check what is stored,
         then type DELETE to confirm. This removes their enquiries, concerns, callback requests, emails and chats,
@@ -148,6 +154,10 @@ async function load() {
   table("#callbacks", d.callbacks, ["Ref", "Name", "Mobile", "About", "To", "Status", "Logged"], c => [
     `<b>${esc(c.ref)}</b>`, esc(c.name), esc(c.mobile), { cls: "wrap-text", html: esc(c.reason) }, esc(c.assigned_to), statusSelect("callbacks", c), when(c.created_at)
   ]);
+  table("#unanswered", d.unanswered, ["Last asked", "Question", "Times", ""], q => [
+    when(q.last_at), { cls: "wrap-text", html: esc(q.question) }, String(q.count),
+    `<button type="button" data-done="${Number(q.id)}" aria-label="Content added for question ${Number(q.id)}">Content added</button>`
+  ]);
   table("#audit", d.audit, ["When", "Action", "Details"], a => [when(a.at), esc(a.action), { cls: "wrap-text", html: esc(a.detail) }]);
   $("#emailNote").textContent = !d.email_on ? "Email is not set up: messages are only kept here."
     : d.test_mode ? "Test mode: every email goes to the test address, not to staff." : "";
@@ -191,6 +201,14 @@ $("#delGo").onclick = async () => {
   } catch (err) { toast("Could not delete: " + err.message); }
 };
 document.addEventListener("click", async e => {
+  const done = e.target.closest("button[data-done]");
+  if (done) {
+    done.disabled = true;
+    try { await api(`/staff/api/unanswered/${done.dataset.done}/done`, {}); toast("Marked as added"); }
+    catch (err) { toast("Could not save: " + err.message); }
+    load();
+    return;
+  }
   const b = e.target.closest("button[data-resend]"); if (!b) return;
   b.disabled = true;
   try { const r = await api("/staff/api/resend", { id: Number(b.dataset.resend) }); toast(`Email ${r.status}`); }

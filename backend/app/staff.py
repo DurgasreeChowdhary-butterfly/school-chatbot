@@ -16,7 +16,7 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from pydantic import BaseModel
 
-from . import config, db, jobs, notify, retention
+from . import config, db, jobs, notify, retention, unanswered
 
 log = logging.getLogger("chatbot.staff")
 router = APIRouter()
@@ -202,6 +202,7 @@ def staff_data(request: Request):
         "test_mode": notify.test_mode(),
         "login_alert": login_alert(),
         "audit": retention.recent_audit(),
+        "unanswered": unanswered.open_questions(),
     }
 
 
@@ -246,6 +247,16 @@ def resend_email(req: Resend, request: Request):
         raise HTTPException(status_code=404, detail="Not found.")
     log.info("Staff resent email %s: %s", req.id, row["status"])
     return {"ok": True, "status": row["status"], "error": row["error"]}
+
+
+@router.post("/staff/api/unanswered/{question_id}/done")
+def unanswered_done(question_id: int, request: Request):
+    """Staff added the missing information to the knowledge files."""
+    _require_login(request)
+    _require_same_site_request(request)
+    if not unanswered.mark_content_added(question_id):
+        raise HTTPException(status_code=404, detail="Not found.")
+    return {"ok": True}
 
 
 class Person(BaseModel):

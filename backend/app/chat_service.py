@@ -6,7 +6,7 @@ import re
 from dataclasses import dataclass
 from datetime import date
 
-from . import routing, sessions, tools
+from . import routing, sessions, tools, unanswered
 from .llm.base import LLMProvider, Message
 from .prompts import build_system_prompt
 
@@ -74,6 +74,8 @@ def handle_message(
                 continue
             if unknown:
                 reply = replace_contacts(reply, unknown, campus)
+            if not ctx.action and unanswered.is_unanswered(reply):
+                unanswered.record(campus, text)  # shows the school which information is missing
             # Only the visible conversation is remembered, not the tool steps.
             sessions.remember(session, user_message, Message(role="assistant", content=reply))
             return ChatOutcome(reply, action=ctx.action)

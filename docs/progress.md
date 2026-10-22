@@ -545,6 +545,28 @@ dry run deletes nothing; audit line without personal details; the setting; the s
 one person (other people untouched, chat found by number in any format, needs DELETE, login and the staff header,
 invalid number refused); the whole flow in a real browser.
 
+### 3. Unanswered questions report
+**Built**
+- `backend/app/unanswered.py`: when the bot's reply says it does not have the information (the wording rule 1 asks
+  for), the visitor's question is stored, with phone numbers, emails and long numbers replaced by [number]/[email].
+  Refusals that use the same words ("I don't have the authority", "a comparison", "other discounts", per-child data)
+  are not counted. The same question (ignoring case and punctuation) is counted, not repeated. Question text is never
+  logged, and old entries are removed by the retention purge.
+- Staff page "Questions the bot could not answer": newest first, with how many times each was asked, and a
+  "Content added" button. If someone asks again later, it comes back.
+
+**Tested**
+- Measured on the 240 real answers from the first round: it flags the real gaps every time (swimming pool 6/6, Grade 4
+  subject list 6/6, exact admission-test dates 3/6, future openings, affiliation details) and 1 borderline discount
+  reply; the first version also flagged discount and comparison refusals, which are now excluded.
+- pytest (8 new tests, 198 in total): numbers and emails removed; answered questions and refusals not recorded;
+  counting and newest first; partial answers; staff list, button (header needed), back when asked again; login needed;
+  purge; question text not in the log.
+
+**Still weak**
+- Names typed in a question are not removed (they cannot be recognised reliably); the purge deletes them with the rest.
+- Detection depends on the model using the "I don't have ..." wording; a vague answer without it is not caught.
+
 ## Known weaknesses (overall, updated 22 Oct 2026, after the real-content round)
 1. **Model quality and quota.** Development uses `gemini-3.5-flash-lite` on the free tier. It is a small model and
    answers vary between runs (see docs/consistency-report.md). The bigger models failed (timeouts) or had a
