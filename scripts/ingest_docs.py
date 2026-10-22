@@ -20,6 +20,7 @@ import argparse
 import csv
 import re
 import subprocess
+import tempfile
 import sys
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -120,6 +121,8 @@ TENTATIVE_RE = re.compile(r"\b(tbd|tba|to be (?:announced|decided|confirmed)|ten
                           r"approx(?:imately)?|may change|likely|expected)\b|\?", re.I)
 RELATIVE_RE = re.compile(r"\b(next (?:week|month|monday|tuesday|wednesday|thursday|friday|saturday|sunday)|"
                          r"tomorrow|this (?:week|month)|coming (?:week|month))\b", re.I)
+INDIC_RE = re.compile(r"[\u0900-\u097F\u0C00-\u0C7F]+")  # Devanagari (Hindi) and Telugu letters
+CONTEXT_RE = re.compile(r"sheet '([^']+)'|table \d+ \(([^)]+)\)")
 REVIEWER_REASONS = ("text may be misread", "looks like an Aadhaar", "a mobile number without")
 AADHAAR_RE = re.compile(r"(?<!\d)\d{4}\s?\d{4}\s?\d{4}(?!\d)")
 MOBILE_RE = re.compile(r"(?<![\d+])[6-9]\d{9}(?!\d)")
@@ -131,6 +134,7 @@ class Line:
     source: str        # e.g. "fee-circular.pdf, page 1"
     doc: str
     topic_hint: str | None = None
+    context_topic: str | None = None  # from a sheet name or table title: decides the file for table rows
     reasons: list[str] = field(default_factory=list)
 
 
@@ -152,26 +156,47 @@ def read_document(path: Path) -> tuple[list[tuple[str, str]], str]:
     suffix = path.suffix.lower()
     if suffix == ".pdf":
         from pypdf import PdfReader
-        out = []
+        out, scanned = [], False
         for n, page in enumerate(PdfReader(path).pages, 1):
-            out += [(t, f"page {n}") for t in (page.extract_text() or "").splitlines()]
+            text = page.extract_text() or ""
+            if not text.strip():  # a scanned page: only a picture. Read the picture with OCR.
+                text = _ocr_pdf_page(page)
+                scanned = scanned or bool(text.strip())
+            out += [(t, f"page {n}") for t in label_columns(text.splitlines())]
         if not any(t.strip() for t, _ in out):
-            raise ValueError("no text in this PDF (probably a scan): type it in, or save the pages as photos")
-        return out, "PDF text"
+            raise ValueError("no text in this PDF (a scan, and OCR could not read it): type it in")
+        return out, "scanned PDF (OCR)" if scanned else "PDF text"
     if suffix == ".docx":
         import docx
         d = docx.Document(path)
         out = [(p.text, f"paragraph {n}") for n, p in enumerate(d.paragraphs, 1)]
         for t_no, table in enumerate(d.tables, 1):
-            out += _table_lines([[c.text for c in row.cells] for row in table.rows], f"table {t_no}")
+            rows = []
+            for row in table.rows:
+                cells = []
+                for cell in row.cells:  # a cell merged across columns is listed once per column: keep it once
+                    if not cells or cell._tc is not cells[-1]._tc:
+                        cells.append(cell)
+                rows.append([c.text for c in cells])
+            out += _table_lines(rows, f"table {t_no}")
         return out, "Word"
     if suffix == ".xlsx":
         import openpyxl
-        wb = openpyxl.load_workbook(path, data_only=True, read_only=True)
+        wb = openpyxl.load_workbook(path, data_only=True)
         out = []
-        for ws in wb.worksheets:
-            rows = [["" if v is None else str(v) for v in row] for row in ws.iter_rows(values_only=True)]
-            out += _table_lines([r for r in rows if any(c.strip() for c in r)], f"sheet '{ws.title}'")
+        try:
+            for ws in wb.worksheets:
+                for merged in list(ws.merged_cells.ranges):  # merged cells: copy the value into every cell
+                    value = ws.cell(merged.min_row, merged.min_col).value
+                    ws.unmerge_cells(str(merged))
+                    for row in ws.iter_rows(min_row=merged.min_row, max_row=merged.max_row,
+                                            min_col=merged.min_col, max_col=merged.max_col):
+                        for cell in row:
+                            cell.value = value
+                rows = [["" if v is None else str(v) for v in row] for row in ws.iter_rows(values_only=True)]
+                out += _table_lines([r for r in rows if any(c.strip() for c in r)], f"sheet '{ws.title}'")
+        finally:
+            wb.close()
         return out, "Excel"
     if suffix in TEXT_TYPES:
         text = path.read_text(encoding="utf-8", errors="replace")
@@ -184,15 +209,22 @@ def read_document(path: Path) -> tuple[list[tuple[str, str]], str]:
             raise ValueError("photo: Windows OCR is not available on this computer, so it must be typed in")
         if not text.strip():
             raise ValueError("photo: OCR found no text (too blurred or dark?), so it must be typed in")
-        return [(t, f"OCR line {n}") for n, t in enumerate(text.splitlines(), 1)], "photo (OCR)"
+        return [(t, f"OCR line {n}") for n, t in enumerate(label_columns(text.splitlines()), 1)], "photo (OCR)"
     if suffix in (".doc", ".xls", ".ppt", ".pptx", ".odt", ".rtf", ".pages", ".heic"):
         raise ValueError(f"{suffix} files cannot be read: save as .docx, .xlsx, .pdf or .jpg, or type it in")
     raise ValueError(f"unknown file type {suffix or '(none)'}")
 
 
 def _table_lines(rows: list[list[str]], where: str) -> list[tuple[str, str]]:
-    """Table rows become "Header: value | Header: value" lines, so each number keeps its label."""
+    """Table rows become "Header: value | Header: value" lines, so each number keeps its label.
+    Title rows at the top (one value, or one value repeated across merged cells) are not headings: they are added
+    to `where` in brackets (e.g. "table 1 (HOLIDAYS 2027-28), row 3"), which also tells which file the rows belong to."""
     rows = [[c.strip() for c in r] for r in rows]
+    titles = []
+    while rows and len({c for c in rows[0] if c}) <= 1:
+        titles += [c for c in rows.pop(0) if c][:1]
+    if titles:
+        where = f"{where} ({' / '.join(titles)})"
     if not rows:
         return []
     header = rows[0]
@@ -210,6 +242,48 @@ def _table_lines(rows: list[list[str]], where: str) -> list[tuple[str, str]]:
     return out
 
 
+COLUMN_RE = re.compile(r"\b(admission|annual|term|tuition|transport|exam|development|late|caution|deposit)\s+fees?\b",
+                       re.I)
+
+
+def label_columns(lines: list[str]) -> list[str]:
+    """A table that came out of a PDF as plain text keeps its column headings only in the first line:
+    "Class Admission fee Annual fee Term fee" / "Grade 1 to 5 Rs 12,000 Rs 25,000 Rs 18,000".
+    Give each amount its heading: "Grade 1 to 5 | Admission fee: Rs 12,000 | Annual fee: Rs 25,000 | ..."."""
+    out, columns = [], []
+    for line in lines:
+        found = COLUMN_RE.findall(line)
+        if len(found) >= 2 and not AMOUNT_RE.search(line):
+            columns = [m.group(0) for m in COLUMN_RE.finditer(line)]
+            out.append(line)
+            continue
+        amounts = list(AMOUNT_RE.finditer(line))
+        if columns and len(amounts) == len(columns) and line[:amounts[0].start()].strip():
+            label = line[:amounts[0].start()].strip(" :|-")
+            out.append(" | ".join([label] + [f"{c[0].upper()}{c[1:]}: {a.group(0).strip()}"
+                                             for c, a in zip(columns, amounts)]))
+            continue
+        columns = [] if not amounts else columns
+        out.append(line)
+    return out
+
+
+def _ocr_pdf_page(page) -> str:
+    """OCR the pictures on a scanned PDF page ("" if there are none or OCR is not available)."""
+    texts = []
+    for image in page.images:
+        with tempfile.TemporaryDirectory() as tmp:
+            picture = Path(tmp) / (Path(image.name).stem + ".png")
+            image.image.save(picture)
+            texts.append(ocr_image(picture) or "")
+    return "\n".join(texts)
+
+
+def fix_ocr(text: str) -> str:
+    """Common OCR slips that cost a fact: a capital letter split off a short capital word ("P TM" -> "PTM")."""
+    return "\n".join(re.sub(r"\b([A-Z]) (?=[A-Z]{1,4}\b)", r"\1", line) for line in text.splitlines())
+
+
 def ocr_image(path: Path) -> str | None:
     """Text from a photo using Windows' built-in OCR, or None if that is not available."""
     if sys.platform != "win32":
@@ -221,7 +295,7 @@ def ocr_image(path: Path) -> str | None:
         return None
     if run.returncode != 0:
         return None
-    return run.stdout.decode("utf-8", errors="replace")
+    return fix_ocr(run.stdout.decode("utf-8", errors="replace"))
 
 
 # ---------- Cleaning, sorting and flagging ----------
@@ -266,6 +340,8 @@ def topic_for(line: Line) -> str | None:
     for file, needed in REQUIRED_LINES.items():
         if any(line.text.lower().startswith(n.lower()) for n in needed):
             return file
+    if line.context_topic:  # a row of a sheet called "Transport", or of a table titled "HOLIDAYS 2027-28"
+        return line.context_topic
     scores = {name: score(line.text, kws) for name, kws in TOPICS.items()}
     best = max(scores.values())
     if best == 0:
@@ -287,6 +363,9 @@ def section_for(file: str, line: Line) -> str | None:
 
 def flag_unclear(line: Line) -> None:
     text = line.text
+    if INDIC_RE.search(text):
+        line.reasons.append("contains Hindi or Telugu words: write the line in English (the chatbot answers in English)")
+        text = INDIC_RE.sub("", text)  # judge the rest of the line on its own
     letters = sum(c.isalnum() or c.isspace() for c in text)
     # Misread text: few letters, or digits 0/1 inside words ("SCH00L", "n0t", "Schoo1"), or OCR noise ("~~", "??").
     if len(text) > 3 and letters / len(text) < 0.85 or re.search(r"[A-Za-z][01]+[A-Za-z]|[A-Za-z]{2}[01]\b|~~|\?\?", text):
@@ -406,6 +485,9 @@ def ingest(incoming: Path, campus: str = "pilot-campus") -> Result:
             if is_title(line):
                 continue
             line.topic_hint = hint
+            context = CONTEXT_RE.search(line.source)
+            if context:
+                line.context_topic = topic_for(Line(context.group(1) or context.group(2), "", ""))
             flag_unclear(line)
             kept.append(line)
         all_lines += kept
@@ -557,6 +639,17 @@ def write_report(result: Result, path: Path, incoming: Path, drafts_dir: Path) -
         out += ["", "## Lines not sorted into any file", "",
                 "These lines did not match any topic. Add them to the right draft by hand, or ignore them.", ""]
         out += [f"- \"{l.text}\" ({l.source})" for l in result.unsorted]
+    out += ["", "## Always typed or checked by hand", "",
+            "Measured with harder fake documents (docs/ingest-rehearsal.md). These are not read, or not read reliably:",
+            "- Old Word and Excel files (.doc, .xls), PowerPoint, Apple Pages and HEIC photos: save them as .docx, .xlsx, "
+            ".pdf or .jpg first, or type them in.",
+            "- Handwriting, and photos that are very dark, blurred or taken at a steep angle (OCR reads little or nothing).",
+            "- Hindi or Telugu writing inside photos and scans: the Windows OCR reads English only, so those words are "
+            "lost. (In Word, Excel and text files they are kept and marked for translation.)",
+            "- Photos and scanned PDFs on a computer without Windows 10/11 OCR.",
+            "- Tables in PDFs or photos whose columns are not fee columns (admission, annual, term ...): the numbers keep "
+            "their row, but not their column heading. Check each such row against the original.",
+            "- Logos, stamps, signatures and anything inside pictures in Word files."]
     out += ["", "## Not done by this script", "",
             "- `kb/pilot-campus/routing.json` (who gets which concern, role emails) and `config/working_days.json` "
             "(holidays) must be updated by hand to match the approved escalation.md, contacts.md and calendar.md. "

@@ -567,6 +567,30 @@ invalid number refused); the whole flow in a real browser.
 - Names typed in a question are not removed (they cannot be recognised reliably); the purge deletes them with the rest.
 - Detection depends on the model using the "I don't have ..." wording; a vague answer without it is not caught.
 
+### 4. Realistic ingest rehearsal
+**Built**
+- `tests/hard_docs.py`: six harder fake documents: a phone photo (rotated 3.5 degrees, shadow, noise, blur, JPEG 55),
+  an image-only scanned PDF, a fee table PDF in columns, Word tables with merged cells (across and down), an Excel
+  file with three sheets and merged cells, and a notice with Hindi and Telugu words. Each comes with the facts it holds.
+- `scripts/ingest_rehearsal.py`: ingests each document alone, checks every fact (right / flagged / wrong file /
+  missing), writes `docs/ingest-rehearsal.md` and a sample `docs/content-review.md`. Photos in `incoming/` are counted
+  only (content never written to the repo; none were there).
+- Improvements to `scripts/ingest_docs.py`, each cheap: scanned PDF pages read with Windows OCR; PDF fee tables keep
+  their column headings on every row; table title rows are titles, not headings; Excel merged cells filled in (and
+  workbooks closed, which also fixed a file left locked on Windows); Word cells merged across columns kept once; the
+  sheet name or table title decides the file for its rows; "P TM" from OCR joined; Hindi/Telugu words marked for
+  translation instead of "misread". `docs/content-review.md` now always lists what still has to be typed by hand.
+
+**Tested**
+- Measured: before 11 of 36 facts right (20 missing); after 33 right and 3 flagged on purpose (Hindi/Telugu lines),
+  0 missing, 0 in the wrong file.
+- pytest (4 new tests, 202 in total): the rehearsal scores, column headings, title rows, OCR fix, Indian languages.
+
+**Still weak**
+- The fake documents were written by the same person who tuned the script: real ones will score lower.
+- Hindi/Telugu in photos is not read (Windows OCR uses English here). Non-fee table columns in PDFs lose their headings.
+- No real photo from the school was available to try.
+
 ## Known weaknesses (overall, updated 22 Oct 2026, after the real-content round)
 1. **Model quality and quota.** Development uses `gemini-3.5-flash-lite` on the free tier. It is a small model and
    answers vary between runs (see docs/consistency-report.md). The bigger models failed (timeouts) or had a

@@ -1,9 +1,8 @@
 # Content review (22 Oct 2026)
 
-> **Sample.** This report was made from the three FAKE test documents in `tests/messy_docs.py`, to show what
-> the real one looks like. Running `scripts/ingest_docs.py` on the school's documents replaces it.
+> **Sample.** Made from the six harder FAKE documents in `tests/hard_docs.py` by `scripts/ingest_rehearsal.py`. Running `scripts/ingest_docs.py` on the school's documents replaces it.
 
-Made by `scripts/ingest_docs.py` from the documents in `incoming/`. Drafts are in `drafts/pilot-campus/`. Nothing here is in the chatbot yet.
+Made by `scripts/ingest_docs.py` from the documents in `docs/`. Drafts are in `drafts/pilot-campus/`. Nothing here is in the chatbot yet.
 
 Send the **Questions for the school** to the school. When the answers come back, fix the drafts, remove every "NEEDS REVIEW", then run `python scripts/approve_kb.py`.
 
@@ -11,30 +10,44 @@ Send the **Questions for the school** to the school. When the answers come back,
 
 | File | Read as | Lines |
 |---|---|---|
-| calendar-2027-28.docx | Word | 11 |
-| fee-circular-2027.pdf | PDF text | 11 |
-| notice-board-photo.txt | text | 9 |
+| calendar-merged.docx | Word | 6 |
+| fee-table-columns.pdf | PDF text | 6 |
+| fees-workbook.xlsx | Excel | 9 |
+| notice-mixed-language.docx | Word | 5 |
+| notice-phone-photo.jpg | photo (OCR) | 4 |
+| scanned-admissions.pdf | scanned PDF (OCR) | 4 |
 
 ## Questions for the school
 
-1. **Conflicting:** annual fee, grade 1 to 5: Rs 26,000 in fee-circular-2027.pdf, page 1; Rs 27,000 in notice-board-photo.txt, line 5. Which is correct?
-2. **Missing:** admissions.md (section 'Process', section 'Age criteria', section 'Classes offered', section 'Admission test'). Please send the admission process, age criteria (and the cut-off date), classes offered and admission test.
-3. **Missing:** documents.md. Please send the list of documents needed for admission and when they are collected.
-4. **Missing:** curriculum.md. Please send the board, curriculum and programmes, class sizes and facilities.
-5. **Missing:** registration.md. Please send the registered society or trust and the affiliation number.
-6. **Missing:** hiring.md. Please send current openings and how to apply.
+1. **Missing:** admissions.md (section 'Process', section 'Classes offered'). Please send the admission process, age criteria (and the cut-off date), classes offered and admission test.
+2. **Missing:** discounts_policy.md. Please send what concessions or scholarships exist and what staff may promise.
+3. **Missing:** curriculum.md. Please send the board, curriculum and programmes, class sizes and facilities.
+4. **Missing:** registration.md. Please send the registered society or trust and the affiliation number.
+5. **Missing:** hiring.md. Please send current openings and how to apply.
+6. **Missing:** faq.md. Please send approved answers to the questions parents ask most, and school timings.
 7. **Missing:** escalation.md. Please send who handles each kind of concern first, the backup person, and response times.
 8. **Missing:** privacy_notice.md. Please send the school's approved privacy notice for the chat.
-9. **Please confirm:** "Annual examinations: March 2028 (dates to be announced)" (calendar-2027-28.docx, paragraph 5): not final ('to be announced').
-10. **Please confirm:** "Summer vacation | From: from 1 May 2028" (calendar-2027-28.docx, table 1, row 6): start date only, no end date.
-11. **Please confirm:** "A late fee of Rs 100 per day will apply (amount tentative)." (fee-circular-2027.pdf, page 1): not final ('tentative').
-12. **Please confirm:** "PTM next Saturday ~~ details fr0m class teacher ??" (notice-board-photo.txt, line 9): not final ('?'); relative date, not an exact date.
+9. **Please confirm:** "NOTICE / सूचना / ప్రకటన" (notice-mixed-language.docx, paragraph 1): contains Hindi or Telugu words: write the line in English (the chatbot answers in English).
+10. **Please confirm:** "Diwali (दीपावली) holidays: 27 to 30 October 2027" (notice-mixed-language.docx, paragraph 2): contains Hindi or Telugu words: write the line in English (the chatbot answers in English).
+11. **Please confirm:** "PTM (తల్లిదండ్రుల సమావేశం) on 25 September 2027, 9:30 to 12:30" (notice-mixed-language.docx, paragraph 3): contains Hindi or Telugu words: write the line in English (the chatbot answers in English).
+12. **Please confirm:** "Fees can be paid at the accounts office (लेखा कार्यालय) from 9:00 to 15:00 on working days." (notice-mixed-language.docx, paragraph 4): contains Hindi or Telugu words: write the line in English (the chatbot answers in English).
+13. **Please confirm:** "Bus (బస్సు) routes: North, South, East and Central." (notice-mixed-language.docx, paragraph 5): contains Hindi or Telugu words: write the line in English (the chatbot answers in English).
 
-## For the reviewer: check against the original documents
+## Lines not sorted into any file
 
-- "Schoo1 timings: 8:45 am to 3:15 pm (Grade 1 and above); pre-primary til1 12:30" (notice-board-photo.txt, line 7): text may be misread (check against the original document).
-- "Hostel: n0t available" (notice-board-photo.txt, line 8): text may be misread (check against the original document).
-- "For uniform queries contact Mrs Sample Teacher 9876501234" (notice-board-photo.txt, line 10): a mobile number without a school role: check it is not a parent's or staff member's personal number.
+These lines did not match any topic. Add them to the right draft by hand, or ignore them.
+
+- "NOTICE / सूचना / ప్రకటన" (notice-mixed-language.docx, paragraph 1)
+
+## Always typed or checked by hand
+
+Measured with harder fake documents (docs/ingest-rehearsal.md). These are not read, or not read reliably:
+- Old Word and Excel files (.doc, .xls), PowerPoint, Apple Pages and HEIC photos: save them as .docx, .xlsx, .pdf or .jpg first, or type them in.
+- Handwriting, and photos that are very dark, blurred or taken at a steep angle (OCR reads little or nothing).
+- Hindi or Telugu writing inside photos and scans: the Windows OCR reads English only, so those words are lost. (In Word, Excel and text files they are kept and marked for translation.)
+- Photos and scanned PDFs on a computer without Windows 10/11 OCR.
+- Tables in PDFs or photos whose columns are not fee columns (admission, annual, term ...): the numbers keep their row, but not their column heading. Check each such row against the original.
+- Logos, stamps, signatures and anything inside pictures in Word files.
 
 ## Not done by this script
 
