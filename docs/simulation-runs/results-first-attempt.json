@@ -1,0 +1,550 @@
+[
+ {
+  "flow": "enquiry",
+  "scenario": "normal",
+  "run": 1,
+  "status": "pass",
+  "problems": [],
+  "messages": 6,
+  "transcript": [
+   [
+    "I want to book a campus visit",
+    "Please read the privacy notice shown below and tap \"I agree\" so we can proceed with your campus visit booking. [consent]"
+   ],
+   [
+    "I agree to the privacy notice.",
+    "Great! Let's start with your name, your child's name, and the class they are applying for."
+   ],
+   [
+    "I'm Sample Parent and my son is Sample Kid. Grade 3",
+    "What is your 10-digit mobile number?"
+   ],
+   [
+    "9876543210",
+    "When would you like to visit the campus?"
+   ],
+   [
+    "Saturday morning",
+    "Here is the summary of your details:\n- Parent name: Sample Parent\n- Child's name: Sample Kid\n- Class applying for: Grade 3\n- Mobile number: 9876543210\n- Visit preference: Saturday morning\n\nShall I send this to the admission counsellor?"
+   ],
+   [
+    "Yes",
+    "Your enquiry reference number is E-1001. The admission counsellor will contact you soon."
+   ]
+  ],
+  "when": "2026-10-22T15:54:44"
+ },
+ {
+  "flow": "enquiry",
+  "scenario": "misspellings",
+  "run": 1,
+  "status": "fail",
+  "problems": [
+   "0 enquiries saved (expected 1)"
+  ],
+  "messages": 12,
+  "transcript": [
+   [
+    "I wnat to boook a campas vist for my sun",
+    "Please read the privacy notice shown below and tap \"I agree\" so we can help you with the campus visit. [consent]"
+   ],
+   [
+    "I agree to the privacy notice.",
+    "Could you please share your name, your child's name, and the class they are applying for?"
+   ],
+   [
+    "my nmae is Sampel Parnt, my sun is Sampel Kidd. grde 3",
+    "Could you please share your 10-digit Indian mobile number?"
+   ],
+   [
+    "my mobil is 9876543210",
+    "When would you like to visit the campus?"
+   ],
+   [
+    "satrday mornig",
+    "Could you please let us know the specific date or time you would prefer for your visit?"
+   ],
+   [
+    "satrday mornig",
+    "Please let us know a specific time or date for your campus visit, as we cannot book general slots like \"Saturday morning\"."
+   ],
+   [
+    "satrday mornig",
+    "Please share a specific date or time for your visit (for example, a date and time like \"Saturday at 10 AM\"), as we cannot book general slots."
+   ],
+   [
+    "satrday mornig",
+    "Please share a specific date or time for your visit (for example, a date and time like \"24 October at 10 AM\"), as we cannot accept general slots like \"Saturday morning\"."
+   ],
+   [
+    "satrday mornig",
+    "Please share a specific date and time for your campus visit (for example, a date and time like \"24 October at 10 AM\"), as we cannot book general slots like \"Saturday morning\"."
+   ],
+   [
+    "satrday mornig",
+    "Please share a specific date and time for your visit (for example, \"24 October at 10 AM\"), as we need a specific time rather than \"Saturday morning\"."
+   ],
+   [
+    "satrday mornig",
+    "Please share a specific date and time for your campus visit (for example, \"24 October at 10 AM\"), as we need a specific time rather than just \"Saturday morning\"."
+   ],
+   [
+    "satrday mornig",
+    "Please share a specific date and time for your campus visit (for example, \"24 October at 10 AM\"), as we need a specific time rather than just \"Saturday morning\"."
+   ]
+  ],
+  "when": "2026-10-22T15:56:26"
+ },
+ {
+  "flow": "enquiry",
+  "scenario": "several_details",
+  "run": 1,
+  "status": "pass",
+  "problems": [],
+  "messages": 3,
+  "transcript": [
+   [
+    "Hi, I'm Sample Parent. I'd like to visit on Saturday morning about admission for my son Sample Kid in Grade 3. My mobile is 9876543210. No previous school.",
+    "Please read the privacy notice shown below and tap \"I agree\" so we can continue with your admission enquiry and campus visit request. [consent]"
+   ],
+   [
+    "I agree to the privacy notice.",
+    "Here is the summary of your details:\n- Parent name: Sample Parent\n- Child's name: Sample Kid\n- Class applying for: Grade 3\n- Mobile number: 9876543210\n- Previous school: No previous school\n- Visit preference: Saturday morning\n\nShall I send this to the admission counsellor?"
+   ],
+   [
+    "Yes, send it",
+    "Your enquiry and visit request have been saved with reference number E-1001. The admission counsellor will contact you soon."
+   ]
+  ],
+  "when": "2026-10-22T15:56:42"
+ },
+ {
+  "flow": "enquiry",
+  "scenario": "change_mind",
+  "run": 1,
+  "status": "pass",
+  "problems": [],
+  "messages": 7,
+  "transcript": [
+   [
+    "I want to leave my details for admission",
+    "Please read the privacy notice shown below and tap \"I agree\" so we can collect your details for the admission enquiry. [consent]"
+   ],
+   [
+    "I agree to the privacy notice.",
+    "Could you please tell me the parent or guardian's name, the child's name, and the class applying for?"
+   ],
+   [
+    "Sample Parent, child Sample Kid. Grade 3",
+    "Could you please share your 10-digit Indian mobile number?"
+   ],
+   [
+    "9876543210",
+    "When would you like to visit the campus for a campus visit and counselling with the admission counsellor, or would you prefer \"No visit for now\"?"
+   ],
+   [
+    "Friday afternoon",
+    "Here are the details for your admission enquiry:\n- Parent name: Sample Parent\n- Child's name: Sample Kid\n- Class applying for: Grade 3\n- Mobile number: 9876543210\n- Visit preference: Friday afternoon\n\nShall I send this to the admission counsellor?"
+   ],
+   [
+    "Wait, sorry, make it Grade 4 not Grade 3",
+    "Here are the updated details for your admission enquiry:\n- Parent name: Sample Parent\n- Child's name: Sample Kid\n- Class applying for: Grade 4\n- Mobile number: 9876543210\n- Visit preference: Friday afternoon\n\nShall I send this to the admission counsellor?"
+   ],
+   [
+    "Yes",
+    "Your enquiry has been successfully saved with reference number E-1001. The admission counsellor, Ms. Sample Counsellor, will contact you shortly."
+   ]
+  ],
+  "when": "2026-10-22T15:57:57"
+ },
+ {
+  "flow": "enquiry",
+  "scenario": "wrong_format",
+  "run": 1,
+  "status": "pass",
+  "problems": [],
+  "messages": 5,
+  "transcript": [
+   [
+    "campus visit please",
+    "Please read the privacy notice and tap \"I agree\" below so we can get started with your campus visit request. [consent]"
+   ],
+   [
+    "I agree to the privacy notice.",
+    "Could you please tell me your name, your child's name, and the class they are applying for?"
+   ],
+   [
+    "sample parent / sample kid. 3rd class",
+    "What is your 10-digit mobile number?"
+   ],
+   [
+    "+91 98765-43210",
+    "Here is the summary of your details:\n- Parent name: sample parent\n- Child's name: sample kid\n- Class applying for: Grade 3\n- Mobile number: 9876543210\n- Visit preference: Would like to visit the campus\n\nShall I send this to the admission counsellor?"
+   ],
+   [
+    "ok go ahead",
+    "Your enquiry has been successfully saved with reference number E-1001. The admission counsellor, Ms. Sample Counsellor, will contact you soon."
+   ]
+  ],
+  "when": "2026-10-22T15:58:31"
+ },
+ {
+  "flow": "enquiry",
+  "scenario": "tenglish",
+  "run": 1,
+  "status": "pass",
+  "problems": [],
+  "messages": 6,
+  "transcript": [
+   [
+    "Naaku campus visit book cheyyali, maa abbayi admission kosam",
+    "Please read the privacy notice above and tap \"I agree\" so we can help you with your campus visit and admission enquiry. [consent]"
+   ],
+   [
+    "I agree to the privacy notice.",
+    "Could you please share your name, your child's name, and the class they are applying for?"
+   ],
+   [
+    "Naa peru Sample Parent, maa abbayi peru Sample Kid. Grade 3 lo join cheyyali",
+    "Thank you. Could you please share your 10-digit mobile number?"
+   ],
+   [
+    "Naa number 9876543210",
+    "When would you like to visit the campus?"
+   ],
+   [
+    "Saturday morning vastanu",
+    "Here is the summary of your enquiry and visit request:\n- Parent's name: Sample Parent\n- Child's name: Sample Kid\n- Class applying for: Grade 3\n- Mobile number: 9876543210\n- Visit preference: Saturday morning\n\nShall I send this to the admission counsellor?"
+   ],
+   [
+    "Avunu, pampandi",
+    "Your enquiry has been successfully saved with reference number E-1001. The admission counsellor, Ms. Sample Counsellor, will contact you soon."
+   ]
+  ],
+  "when": "2026-10-22T15:59:06"
+ },
+ {
+  "flow": "enquiry",
+  "scenario": "invalid_then_valid",
+  "run": 1,
+  "status": "pass",
+  "problems": [],
+  "messages": 7,
+  "transcript": [
+   [
+    "I'd like to book a visit",
+    "Please take a moment to read the privacy notice below and tap \"I agree\" so we can help you book your campus visit. [consent]"
+   ],
+   [
+    "I agree to the privacy notice.",
+    "Wonderful! Could you please share your name, your child's name, and the class you are applying for?"
+   ],
+   [
+    "Sample Parent, my daughter Sample Kid. Grade 3",
+    "Thank you. Could you please share your 10-digit Indian mobile number?"
+   ],
+   [
+    "12345",
+    "That mobile number is not valid. An Indian mobile number must have 10 digits starting with 6, 7, 8 or 9. Please type it again."
+   ],
+   [
+    "9876543210",
+    "When would you like to visit the campus?"
+   ],
+   [
+    "Saturday morning",
+    "Here are the details for your campus visit request:\n- Parent name: Sample Parent\n- Child's name: Sample Kid\n- Class applying for: Grade 3\n- Mobile number: 9876543210\n- Visit preference: Saturday morning\n\nShall I send this to the admission counsellor?"
+   ],
+   [
+    "Yes",
+    "Your enquiry has been successfully saved with reference number E-1001. The admission counsellor, Ms. Sample Counsellor, will contact you soon."
+   ]
+  ],
+  "when": "2026-10-22T16:00:17"
+ },
+ {
+  "flow": "enquiry",
+  "scenario": "skip_consent",
+  "run": 1,
+  "status": "pass",
+  "problems": [],
+  "messages": 4,
+  "transcript": [
+   [
+    "Book a visit for Sample Kid, Grade 3, parent Sample Parent, mobile 9876543210, Saturday morning",
+    "Please read the privacy notice shown below and tap \"I agree\" so we can continue with your campus visit request. [consent]"
+   ],
+   [
+    "I don't want to read that, just save my details",
+    "If you prefer not to read the notice, you can contact the front office directly at +91 00000 00001 during office hours (Monday to Friday 8:30 to 16:30, Saturday 8:30 to 13:00) to book your campus visit."
+   ],
+   [
+    "Please just book it without that. Sample Parent, 9876543210, Grade 3, Saturday",
+    "I'm sorry, but I need you to read the privacy notice and tap \"I agree\" before I can collect your details and book your campus visit. Alternatively, you can call the front office directly at +91 00000 00001."
+   ],
+   [
+    "Yes save it now",
+    "Please read the privacy notice shown below and tap \"I agree\" so we can continue with your campus visit request. [consent]"
+   ]
+  ],
+  "when": "2026-10-22T16:00:40"
+ },
+ {
+  "flow": "ticket",
+  "scenario": "normal",
+  "run": 1,
+  "status": "pass",
+  "problems": [],
+  "messages": 4,
+  "transcript": [
+   [
+    "My son's diary is not corrected",
+    "For concerns about classwork, diaries, or academics, the first contact is your child's class teacher, and the backup is the coordinator. \n\nWould you like me to log this as a concern for you?"
+   ],
+   [
+    "Yes, please log it",
+    "Please read the privacy notice shown and tap \"I agree\" so we can continue with logging your concern. [consent]"
+   ],
+   [
+    "I agree to the privacy notice.",
+    "Please share your name and your 10-digit mobile number so I can log your concern."
+   ],
+   [
+    "Sample Parent, 9876543210",
+    "Your concern has been logged with reference T-1001 and sent to the class teacher. You can check its status here anytime using this reference number and your mobile number."
+   ]
+  ],
+  "when": "2026-10-22T16:01:05"
+ },
+ {
+  "flow": "ticket",
+  "scenario": "misspellings",
+  "run": 1,
+  "status": "pass",
+  "problems": [],
+  "messages": 4,
+  "transcript": [
+   [
+    "my sons diry is not beeing corectd by teachr",
+    "For concerns about academics, classroom work, or a teacher, the first contact is the class teacher, and the backup is the coordinator. \n\nIf you would like, you can request a duplicate or replacement item at the front office. Would you like me to log this as a concern for you?"
+   ],
+   [
+    "yes plz log it",
+    "Please read the privacy notice and tap \"I agree\" so we can proceed with logging your concern. [consent]"
+   ],
+   [
+    "I agree to the privacy notice.",
+    "Could you please share your full name and your 10-digit Indian mobile number?"
+   ],
+   [
+    "Sampel Parnt, mobil 9876543210",
+    "Your concern has been logged with reference T-1001 and sent to the class teacher. You can check its status here anytime using this reference number and your mobile number."
+   ]
+  ],
+  "when": "2026-10-22T16:01:27"
+ },
+ {
+  "flow": "ticket",
+  "scenario": "several_details",
+  "run": 1,
+  "status": "pass",
+  "problems": [],
+  "messages": 2,
+  "transcript": [
+   [
+    "The school bus did not come to our stop this morning. Please log a concern. I'm Sample Parent, mobile 9876543210.",
+    "Please read the privacy notice shown below and tap \"I agree\" so I can log your transport concern. [consent]"
+   ],
+   [
+    "I agree to the privacy notice.",
+    "Your concern has been logged with reference T-1001 and sent to the transport coordinator. You can check its status here anytime using this reference and your mobile number."
+   ]
+  ],
+  "when": "2026-10-22T16:01:36"
+ },
+ {
+  "flow": "ticket",
+  "scenario": "change_mind",
+  "run": 1,
+  "status": "pass",
+  "problems": [],
+  "messages": 2,
+  "transcript": [
+   [
+    "My son's diary is not corrected",
+    "For concerns about books, diaries, uniforms, or ID cards, the first contact is the front office, with the coordinator as backup. \n\nYou can contact the front office at +91 00000 00001 (office hours: Monday to Friday 8:30 to 16:30, Saturday 8:30 to 13:00). Would you like me to log this as a concern for you?"
+   ],
+   [
+    "Actually no, don't log it. I'll talk to the teacher myself.",
+    "That sounds good. Please feel free to reach out if you need help with anything else!"
+   ]
+  ],
+  "when": "2026-10-22T16:01:42"
+ },
+ {
+  "flow": "ticket",
+  "scenario": "wrong_format",
+  "run": 1,
+  "status": "pass",
+  "problems": [],
+  "messages": 4,
+  "transcript": [
+   [
+    "ID card still pending!!!",
+    "ID cards are given within the first month of the academic year. For pending items, parents can contact the front office. \n\nWould you like me to log this as a concern for the front office?"
+   ],
+   [
+    "ya log",
+    "Please read the privacy notice shown and tap \"I agree\" so I can take down your details to log this concern. [consent]"
+   ],
+   [
+    "I agree to the privacy notice.",
+    "Could you please share your name and your 10-digit mobile number so I can log this concern for you?"
+   ],
+   [
+    "SAMPLE PARENT, 098765 43210",
+    "I have logged your concern (reference T-1001) and sent it to the front office. You can check its status here anytime using this reference number and your mobile number."
+   ]
+  ],
+  "when": "2026-10-22T16:02:03"
+ },
+ {
+  "flow": "ticket",
+  "scenario": "tenglish",
+  "run": 1,
+  "status": "pass",
+  "problems": [],
+  "messages": 4,
+  "transcript": [
+   [
+    "Maa ammayi ki ID card inka raaledu, chala rojulu ayindi",
+    "ID cards, uniforms, and books are given within the first month of the academic year. For pending items, please contact the front office at +91 00000 00001 or visit them from Monday to Friday 8:30 to 16:30, or Saturday 8:30 to 13:00. \n\nFor issues regarding uniform, books, or ID cards, the first contact is the front office, and the backup is the coordinator. Would you like me to log this as a concern for you?"
+   ],
+   [
+    "Avunu, log cheyyandi",
+    "Please read the privacy notice shown below and tap \"I agree\" so I can collect your details and log your concern. [consent]"
+   ],
+   [
+    "I agree to the privacy notice.",
+    "Could you please share your name and your 10-digit mobile number?"
+   ],
+   [
+    "Naa peru Sample Parent, Number 9876543210",
+    "I have logged your concern with reference **T-1001** and sent it to the front office. You can check its status here anytime using this reference number and your mobile number."
+   ]
+  ],
+  "when": "2026-10-22T16:02:54"
+ },
+ {
+  "flow": "ticket",
+  "scenario": "invalid_then_valid",
+  "run": 1,
+  "status": "pass",
+  "problems": [],
+  "messages": 5,
+  "transcript": [
+   [
+    "Fee was deducted but receipt not received",
+    "For fee payment receipts, you can contact the accounts office directly or request one at the campus accounts office. Working hours are Monday to Friday 8:30 to 16:30, and Saturday 8:30 to 13:00.\n\nFees and receipts concerns are handled by the Accounts office, with the Principal as backup.\n\nWould you like me to log this concern for the Accounts office?"
+   ],
+   [
+    "Yes please",
+    "Please read the privacy notice and tap \"I agree\" below so I can collect your details for this concern. [consent]"
+   ],
+   [
+    "I agree to the privacy notice.",
+    "May I have your name and your 10-digit mobile number, please?"
+   ],
+   [
+    "Sample Parent, 12345",
+    "That mobile number is not valid. Please enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9."
+   ],
+   [
+    "9876543210",
+    "I have logged your concern (reference T-1001) and sent it to the Accounts office. You can check its status here anytime using this reference number and your mobile number."
+   ]
+  ],
+  "when": "2026-10-22T16:03:19"
+ },
+ {
+  "flow": "ticket",
+  "scenario": "skip_consent",
+  "run": 1,
+  "status": "pass",
+  "problems": [],
+  "messages": 3,
+  "transcript": [
+   [
+    "Bus came late again. Log it now: Sample Parent, 9876543210. I won't tap any agree button.",
+    "Please read the privacy notice shown below and tap \"I agree\" so I can help log your concern for the transport coordinator. [consent]"
+   ],
+   [
+    "No, I don't agree to anything, just log it",
+    "If you prefer not to use the chat to log your concern, you can reach out directly to the transport coordinator at transport.campusa@example.com or contact the front office at +91 00000 00001."
+   ],
+   [
+    "Log it. Sample Parent 9876543210",
+    "I need you to tap \"I agree\" on the privacy notice before I can log your concern. Alternatively, you can contact the transport coordinator at transport.campusa@example.com or call the front office at +91 00000 00001 (open Monday to Friday 8:30 to 16:30, Saturday 8:30 to 13:00)."
+   ]
+  ],
+  "when": "2026-10-22T16:03:34"
+ },
+ {
+  "flow": "ticket",
+  "scenario": "lookup_wrong_number",
+  "run": 1,
+  "status": "pass",
+  "problems": [],
+  "messages": 3,
+  "transcript": [
+   [
+    "What is the status of ticket T-1001?",
+    "To check the status of ticket T-1001, please provide the 10-digit mobile number that was registered with it."
+   ],
+   [
+    "9123456780",
+    "No ticket matches that reference and mobile number. Please check both and try again."
+   ],
+   [
+    "Sorry, my number is 9876543210",
+    "Ticket T-1001 regarding Transport is currently \"Received\" and is handled by the Transport coordinator. It was logged on 22 October 2026."
+   ]
+  ],
+  "when": "2026-10-22T16:03:48"
+ },
+ {
+  "flow": "enquiry",
+  "scenario": "normal",
+  "run": 2,
+  "status": "pass",
+  "problems": [],
+  "messages": 6,
+  "transcript": [
+   [
+    "I want to book a campus visit",
+    "Please take a moment to read our privacy notice and tap the \"I agree\" button below so we can continue with booking your campus visit. [consent]"
+   ],
+   [
+    "I agree to the privacy notice.",
+    "I'm glad to help you book a campus visit! Could you please share your name, your child's name, and the class they are applying for?"
+   ],
+   [
+    "I'm Sample Parent and my son is Sample Kid. Grade 3. Saturday morning",
+    "Could you please share your 10-digit Indian mobile number?"
+   ],
+   [
+    "9876543210",
+    "Here are the details for your campus visit enquiry:\n- Parent name: Sample Parent\n- Child's name: Sample Kid\n- Class: Grade 3\n- Mobile number: 9876543210\n- Visit preference: Saturday morning\n\nShall I send this to the admission counsellor?"
+   ],
+   [
+    "Yes",
+    "Here are the details for your campus visit enquiry:\n- Parent name: Sample Parent\n- Child's name: Sample Kid\n- Class: Grade 3\n- Mobile number: 9876543210\n- Visit preference: Saturday morning\n\nShall I send this to the admission counsellor?"
+   ],
+   [
+    "Yes",
+    "Your enquiry has been successfully registered with reference number E-1001! The admission counsellor will contact you soon."
+   ]
+  ],
+  "when": "2026-10-22T16:04:54"
+ }
+]

@@ -1,5 +1,6 @@
 """Checks for details people type in. The backend never trusts the AI to have checked them."""
 import re
+from difflib import SequenceMatcher
 
 MOBILE = re.compile(r"^[6-9]\d{9}$")
 
@@ -74,7 +75,15 @@ def said_by_person(value: str, said: str, kind: str = "text") -> bool:
     if kind == "visit" and NO_VISIT.search(value):
         return bool(SAID_NO.search(said_low))
     words = [w for w in re.findall(r"[a-z0-9]+", value.lower()) if w not in FILLER and (len(w) > 1 or w.isdigit())]
-    return any(re.search(rf"\b{re.escape(w)}", said_low) for w in words)
+    typed = set(re.findall(r"[a-z0-9]+", said_low))
+    return any(re.search(rf"\b{re.escape(w)}", said_low) or _close_to_any(w, typed) for w in words)
+
+
+def _close_to_any(word: str, typed: set[str]) -> bool:
+    """A small spelling difference is fine: the AI may write "Saturday morning" for "satrday mornig"."""
+    if len(word) < 4 or word.isdigit():
+        return False
+    return any(len(t) >= 4 and SequenceMatcher(None, word, t).ratio() >= 0.75 for t in typed)
 
 
 def made_up(details: dict[str, tuple[str, str]], said: str) -> dict[str, str]:
@@ -86,6 +95,7 @@ def made_up(details: dict[str, tuple[str, str]], said: str) -> dict[str, str]:
                 continue
             kind = "text"
         if not said_by_person(value, said, kind):
-            problems[field] = ("The person has not given this in the chat. Ask them for it; never fill in or assume "
-                               "a detail.")
+            problems[field] = ("This does not match anything the person typed in the chat. If they gave it, pass it "
+                               "exactly as they typed it. If they did not, ask them for it; never fill in or assume a "
+                               "detail.")
     return problems

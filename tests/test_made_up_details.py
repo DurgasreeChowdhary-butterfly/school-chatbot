@@ -58,3 +58,13 @@ def test_how_details_are_matched():
     assert not said_by_person("No visit for now", "Sample Parent, Grade 3", "visit")
     assert not said_by_person("Saturday morning", "Sample Parent, Grade 3", "visit")
     assert said_by_person("UKG", "my daughter is in ukg", "class")
+
+
+def test_small_spelling_differences_are_accepted():
+    """Found by the simulated users: "satrday mornig" passed on as "Saturday morning" was refused, and the model
+    then kept asking for a date."""
+    said = "my nmae is Sampel Parnt. satrday mornig"
+    assert said_by_person("Saturday morning", said, "visit")
+    assert said_by_person("Sample Parent", said)
+    assert not said_by_person("Sunday evening", said, "visit")
+    assert not said_by_person("Ravi Kumar", said)
