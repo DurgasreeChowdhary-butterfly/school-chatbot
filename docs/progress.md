@@ -255,6 +255,25 @@ _In progress: see docs/consistency-report.md when the three live runs are finish
 - The summer vacation end (31 May 2027) is assumed: calendar.md only says "from 1 May 2027".
 - One calendar for all campuses; a second campus with different holidays would need its own file.
 
+### 6. Content checker
+**Built**
+- `scripts/check_kb.py` prints a checklist and exits with 1 if anything needs fixing:
+  `school.json` and a folder per campus; the 14 required files with their headings (and key lines such as
+  "Office hours" and "Holidays:"); `routing.json` keys, roles, deadlines and categories agree with `escalation.md`;
+  `config/working_days.json` is valid and its holidays agree with `calendar.md`.
+- With `DEMO_MODE=false` (or `--live`) it fails every file that still has the word DUMMY, an example.com address or a
+  "+91 00000" phone number. `--kb` checks a folder of new files before they are copied into kb/.
+
+**Tested**
+- pytest (9 new tests, 118 in total) on a copy of kb/: dummy content passes in demo mode and fails with demo mode off;
+  cleaned content passes; each kind of leftover is caught; missing file and heading; routing that disagrees with
+  escalation.md; a holiday date that disagrees with calendar.md.
+- Run on the real repo: all checks pass in demo mode; `--live` lists 18 files with dummy content (expected today).
+
+**Still weak**
+- It checks structure and leftovers, not whether the facts are right. The school must still approve every file, and
+  `docs/test-checks.json` must be updated with the real facts before the answer-quality test means anything.
+
 ## Known weaknesses (overall)
 1. **Model quality and quota.** Development uses `gemini-3.5-flash-lite` on the free tier. It is a small model; the rules
    needed several rounds, and answers can vary from run to run. The bigger models failed (timeouts) or had a

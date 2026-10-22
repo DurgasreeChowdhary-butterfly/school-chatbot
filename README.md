@@ -87,5 +87,9 @@ All AI calls go through `backend/app/llm/`. Only files in that folder may import
 3. Update the holidays and working Saturdays in `config/working_days.json` to match the real `calendar.md`.
    The test `test_config_holidays_match_calendar_md` checks they agree.
 4. Update `kb/school.json` (school name, campuses, menu buttons). A new campus needs its own `kb/<campus-id>/` folder.
-5. Set `DEMO_MODE=false` in .env only when everything in kb/ is real and approved.
+5. Run the content checker: `python scripts/check_kb.py --live`. It lists missing files or headings, routing or
+   holidays that disagree with escalation.md / calendar.md, and any leftover DUMMY text, example.com address or
+   "+91 00000" number. (You can check a folder of new files first: `python scripts/check_kb.py --live --kb path	o
+ew\kb`.)
+   Set `DEMO_MODE=false` in .env only when it says "All checks passed" and everything in kb/ is approved.
 6. Restart the server, run `python -m pytest`, then the answer-quality test, and update `docs/test-report.md`.
